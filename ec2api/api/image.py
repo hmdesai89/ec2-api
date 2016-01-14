@@ -24,7 +24,7 @@ import time
 
 import boto.s3.connection
 import eventlet
-from glanceclient.common import exceptions as glance_exception
+#from glanceclient.common import exceptions as glance_exception
 from lxml import etree
 from oslo_concurrency import processutils
 from oslo_config import cfg
@@ -100,6 +100,7 @@ IMAGE_TYPES = {'aki': 'kernel',
 # manipulating instances/volumes/snapshots.
 # As other code doesn't take it into consideration, here we don't
 # care of it for now. Ostrich algorithm
+'''
 def create_image(context, instance_id, name=None, description=None,
                  no_reboot=False, block_device_mapping=None):
     instance = ec2utils.get_db_item(context, instance_id)
@@ -156,7 +157,7 @@ def create_image(context, instance_id, name=None, description=None,
         os_instance.start()
 
     return {'imageId': image['id']}
-
+'''
 
 def register_image(context, name=None, image_location=None,
                    description=None, architecture=None,

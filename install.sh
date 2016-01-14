@@ -3,7 +3,7 @@
 #Parameters to configure
 SERVICE_USERNAME=ec2api
 SERVICE_PASSWORD=ec2api
-SERVICE_TENANT=service
+SERVICE_TENANT=services
 CONNECTION="mysql://ec2api:ec2api@127.0.0.1/ec2api?charset=utf8"
 LOG_DIR=/var/log/ec2api
 CONF_DIR=/etc/ec2api
@@ -223,7 +223,7 @@ fi
 #create keystone user with admin privileges
 ADMIN_ROLE=$(get_data 2 admin 1 keystone role-list)
 die_if_not_set $LINENO ADMIN_ROLE "Fail to get ADMIN_ROLE by 'keystone role-list' "
-SERVICE_TENANT_ID=$(get_data 2 service 1 keystone tenant-list)
+SERVICE_TENANT_ID=$(get_data 2 services 1 keystone tenant-list)
 die_if_not_set $LINENO SERVICE_TENANT_ID "Fail to get service tenant 'keystone tenant-list' "
 
 echo ADMIN_ROLE $ADMIN_ROLE

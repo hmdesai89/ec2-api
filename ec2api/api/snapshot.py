@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cinderclient import exceptions as cinder_exception
+#from cinderclient import exceptions as cinder_exception
 
 from ec2api.api import clients
 from ec2api.api import common
@@ -53,7 +53,7 @@ def create_snapshot(context, volume_id, description=None):
     return _format_snapshot(context, snapshot, os_snapshot,
                             volume_id=volume_id)
 
-
+'''
 def delete_snapshot(context, snapshot_id):
     snapshot = ec2utils.get_db_item(context, snapshot_id)
     cinder = clients.cinder(context)
@@ -64,7 +64,7 @@ def delete_snapshot(context, snapshot_id):
     # NOTE(andrey-mp) Don't delete item from DB until it disappears from Cloud
     # It will be deleted by describer in the future
     return True
-
+'''
 
 class SnapshotDescriber(common.TaggableItemsDescriber):
 

@@ -14,7 +14,7 @@
 
 import re
 
-from glanceclient.common import exceptions as glance_exception
+#from glanceclient.common import exceptions as glance_exception
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import timeutils
@@ -311,16 +311,16 @@ def os_id_to_ec2_id(context, kind, os_id, items_by_os_id=None,
     return item_id
 
 
-def get_os_image(context, ec2_image_id):
-    kind = get_ec2_id_kind(ec2_image_id)
-    images = db_api.get_public_items(context, kind, (ec2_image_id,))
-    image = (images[0] if len(images) else
-             get_db_item(context, ec2_image_id))
-    glance = clients.glance(context)
-    try:
-        return glance.images.get(image['os_id'])
-    except glance_exception.HTTPNotFound:
-        raise exception.InvalidAMIIDNotFound(id=ec2_image_id)
+#def get_os_image(context, ec2_image_id):
+#    kind = get_ec2_id_kind(ec2_image_id)
+#    images = db_api.get_public_items(context, kind, (ec2_image_id,))
+#    image = (images[0] if len(images) else
+#             get_db_item(context, ec2_image_id))
+#    glance = clients.glance(context)
+#    try:
+#        return glance.images.get(image['os_id'])
+#    except glance_exception.HTTPNotFound:
+#        raise exception.InvalidAMIIDNotFound(id=ec2_image_id)
 
 
 def get_os_public_network(context):
