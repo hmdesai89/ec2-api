@@ -2,6 +2,7 @@
 %:
 	dh $@ --with=python2
 
-dh_auto_clean:
+override_dh_auto_clean:
 	pip install pbr --proxy=http://10.140.218.59:3128
+	dh_auto_clean
 
