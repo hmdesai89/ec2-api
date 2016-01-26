@@ -1,9 +1,6 @@
 #!/usr/bin/make -f
-export PBR_VERSION=0.2.1
+export PBR_VERSION=$(shell dpkg-parsechangelog --show-field Version | sed -e 's/.*://g')
 %:
 	dh $@ --with=python2
 
-override_dh_auto_clean:
-	pip install pbr --proxy=http://10.140.218.59:3128
-	dh_auto_clean
 
