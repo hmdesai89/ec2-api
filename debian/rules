@@ -1,9 +1,9 @@
 #!/usr/bin/make -f
+export PBR_VERSION=0.2.1
 %:
 	dh $@ --with=python2
 
 override_dh_auto_clean:
 	pip install pbr --proxy=http://10.140.218.59:3128
-	export PBR_VERSION=0.2.1
 	dh_auto_clean
 
