@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
 #Parameters to configure
-SERVICE_USERNAME=ec2api
-SERVICE_PASSWORD=ec2api
-SERVICE_TENANT=service
+#SERVICE_USERNAME=ec2api
+#SERVICE_PASSWORD=ec2api
+#SERVICE_TENANT=service
 CONNECTION="mysql://ec2api:ec2api@127.0.0.1/ec2api?charset=utf8"
 LOG_DIR=/var/log/ec2api
 CONF_DIR=/etc/ec2api
@@ -219,6 +219,7 @@ if [[ "$VPC_SUPPORT" == "True" && -z "$EXTERNAL_NETWORK" ]]; then
     fi
     die_if_not_set $LINENO EXTERNAL_NETWORK "$reason. Please set EXTERNAL_NETWORK environment variable to the external network dedicated to EC2 elastic IP operations"
 fi
+:<< COM
 
 #create keystone user with admin privileges
 ADMIN_ROLE=$(get_data 2 admin 1 keystone role-list)
@@ -233,7 +234,7 @@ SERVICE_USERID=$(get_user $SERVICE_USERNAME)
 die_if_not_set $LINENO SERVICE_USERID "Fail to get user for $SERVICE_USERNAME"
 echo SERVICE_USERID $SERVICE_USERID
 add_role $SERVICE_USERID $SERVICE_TENANT $ADMIN_ROLE $SERVICE_USERNAME
-
+COM
 #create log dir
 echo Creating log dir
 sudo install -d $LOG_DIR --owner=$USER
