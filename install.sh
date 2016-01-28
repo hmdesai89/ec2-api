@@ -217,9 +217,9 @@ if [[ "$VPC_SUPPORT" == "True" && -z "$EXTERNAL_NETWORK" ]]; then
     else
         EXTERNAL_NETWORK=$(echo $newtron_output | awk -F '|' '{ print $3 }')
     fi
-    die_if_not_set $LINENO EXTERNAL_NETWORK "$reason. Please set EXTERNAL_NETWORK environment variable to the external network dedicated to EC2 elastic IP operations"
+    #die_if_not_set $LINENO EXTERNAL_NETWORK "$reason. Please set EXTERNAL_NETWORK environment variable to the external network dedicated to EC2 elastic IP operations"
 fi
-:<< COM
+:<< 'COM'
 
 #create keystone user with admin privileges
 ADMIN_ROLE=$(get_data 2 admin 1 keystone role-list)
