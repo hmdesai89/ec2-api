@@ -63,11 +63,13 @@ def create_subnet(context, vpc_id, cidr_block,
                                          'ip_version': '4',
                                          'cidr': cidr_block,
                                          'host_routes': host_routes}}
+            
             os_subnet = neutron.create_subnet(os_subnet_body)['subnet']
             cleaner.addCleanup(neutron.delete_subnet, os_subnet['id'])
         except neutron_exception.OverQuotaClient:
             raise exception.SubnetLimitExceeded()
         try:
+            print 'Adding interface to router'
             neutron.add_interface_router(vpc['os_id'],
                                          {'subnet_id': os_subnet['id']})
         except neutron_exception.BadRequest:
@@ -138,6 +140,7 @@ class SubnetDescriber(common.TaggableItemsDescriber):
                   'state': 'state',
                   'vpc-id': 'vpcId'}
 
+
     def format(self, subnet, os_subnet):
         if not subnet:
             return None
@@ -159,8 +162,7 @@ class SubnetDescriber(common.TaggableItemsDescriber):
             tenant_id=self.context.project_id)['networks']
         self.os_ports = neutron.list_ports(
             tenant_id=self.context.project_id)['ports']
-        return neutron.list_subnets(
-            tenant_id=self.context.project_id)['subnets']
+        return neutron.list_subnets()['subnets']
 
 
 def describe_subnets(context, subnet_id=None, filter=None):
