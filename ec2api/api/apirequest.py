@@ -98,7 +98,7 @@ class APIRequest(object):
 
         response_el = xml.createElement(self.action + 'Response')
         response_el.setAttribute('xmlns',
-                                 'http://ec2.amazonaws.com/doc/%s/'
+                                 'http://vpc.ind-west-1.jiocloudservices.com/doc/%s/'
                                  % self.version)
         request_id_el = xml.createElement('requestId')
         request_id_el.appendChild(xml.createTextNode(request_id))

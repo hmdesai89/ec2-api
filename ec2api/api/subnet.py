@@ -159,8 +159,7 @@ class SubnetDescriber(common.TaggableItemsDescriber):
             tenant_id=self.context.project_id)['networks']
         self.os_ports = neutron.list_ports(
             tenant_id=self.context.project_id)['ports']
-        return neutron.list_subnets(
-            tenant_id=self.context.project_id)['subnets']
+        return neutron.list_subnets()['subnets']
 
 
 def describe_subnets(context, subnet_id=None, filter=None):
