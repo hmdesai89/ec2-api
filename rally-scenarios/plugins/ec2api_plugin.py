@@ -100,7 +100,6 @@ class EC2APIPlugin(scenario.OpenStackScenario):
     @_runner(_run_ec2)
     def describe_vpcs(self, client): 
         data = client.describe_vpcs()
-        print data
 
     @scenario.configure()
     @_runner(_run_ec2)
