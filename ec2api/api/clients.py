@@ -24,8 +24,17 @@ from ec2api.i18n import _, _LW
 
 logger = logging.getLogger(__name__)
 
-CONF = cfg.CONF
+ec2_opts = [
+    cfg.StrOpt('neutron_endpoint_url',
+               default='http://127.0.0.1:9696',
+               help='Neutron EndPoint URL'),
+    cfg.StrOpt('nova_endpoint_url',
+               default='http://127.0.0.1:8888',
+               help='Nova EndPoint URL'),
+]
 
+CONF = cfg.CONF
+CONF.register_opts(ec2_opts)
 
 try:
     from neutronclient.v2_0 import client as neutronclient
@@ -96,7 +105,9 @@ def neutron(context):
         'auth_url': CONF.keystone_url,
         'service_type': 'network',
         'token': context.auth_token,
-        'endpoint_url': _url_for(context, service_type='network'),
+        #'tenant_id': context.tenant,
+        #'endpoint_url': _url_for(context, service_type='network'),
+        'endpoint_url': CONF.neutron_endpoint_url,
         'insecure': CONF.ssl_insecure,
         'cacert': CONF.ssl_ca_file
     }

@@ -43,6 +43,7 @@ Validator = common.Validator
 def create_vpc(context, cidr_block, instance_tenancy='default'):
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
+        #os_router_body = {'router': {'tenant_id':context.tenant_id}}
         os_router_body = {'router': {}}
         try:
             os_router = neutron.create_router(os_router_body)['router']
@@ -59,7 +60,7 @@ def create_vpc(context, cidr_block, instance_tenancy='default'):
         vpc['route_table_id'] = route_table['id']
         db_api.update_item(context, vpc)
         neutron.update_router(os_router['id'], {'router': {'name': vpc['id']}})
-        security_group_api._create_default_security_group(context, vpc)
+        #security_group_api._create_default_security_group(context, vpc)
     return {'vpc': _format_vpc(vpc)}
 
 

@@ -16,6 +16,7 @@
 Starting point for routing EC2 requests.
 """
 import hashlib
+import json
 import sys
 
 from oslo_config import cfg
@@ -43,8 +44,8 @@ ec2_opts = [
     cfg.StrOpt('keystone_url',
                default='http://localhost:5000/v2.0',
                help='URL to get token from ec2 request.'),
-    cfg.StrOpt('keystone_ec2_tokens_url',
-               default='$keystone_url/ec2tokens',
+    cfg.StrOpt('keystone_ec2_auth_url',
+               default='$keystone_url/ec2-auth',
                help='URL to get token from ec2 request.'),
     cfg.IntOpt('ec2_timestamp_expiry',
                default=300,
@@ -153,7 +154,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
         version 4 it is either an X-Amz-Credential parameter or a Credential=
         field in the 'Authorization' header string.
         """
-        access = req.params.get('AWSAccessKeyId')
+        access = req.params.get('JCSAccessKeyId')
         if access is not None:
             return access
 
@@ -171,6 +172,165 @@ class EC2KeystoneAuth(wsgi.Middleware):
         cred_str = auth_str.partition("Credential=")[2].split(',')[0]
         return cred_str.split("/")[0]
 
+    def _get_action_resource_mapping(self, req):
+
+        armappingdict = { 
+                          'CreateVpc': [{
+                                          "action": "jrn:jcs:vpc:CreateVpc",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteVpc': 
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteVpc",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeVpcs':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeVpcs",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'CreateSubnet':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateSubnet",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteSubnet':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteSubnet",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeSubnets':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeSubnets",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'CreateRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateRouteTable",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteRouteTable",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AssociateRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AssociateRouteTable",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DisassociateRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DisassociateRouteTable",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeRouteTables':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeRouteTables",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }], 
+                          'CreateRoute':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateRoute",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteRoute':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteRoute",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AllocateAddress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AllocateAddress",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AsscoiateAddress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AssociateAddress",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DisasscoiateAddress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DisassociateAddress",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'ReleaseAddress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:ReleaseAddress",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'CreateSecurityGroup':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateSecurityGroup",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteSecurityGroup':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteSecurityGroup",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeSecurityGroups':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeSecurityGroups",
+                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AuthorizeSecurityGroupEgress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AuthorizeSecurityGroupEgress",
+                                          "resource": "jrn:jcs:vpc::AuthorizeSecurityGroupEgress:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AuthorizeSecurityGroupIngress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AuthorizeSecurityGroupIngress",
+                                          "resource": "jrn:jcs:vpc::AuthorizeSecurityGroupIngress:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'RevokeSecurityGroupEgress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:RevokeSecurityGroupEgress",
+                                          "resource": "jrn:jcs:vpc::RevokeSecurityGroupEgress:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'RevokeSecurityGroupIngress':
+                                       [{          
+                                          "action": "jrn:jcs:vpc:RevokeSecurityGroupIngress",
+                                          "resource": "jrn:jcs:vpc::RevokeSecurityGroupIngress:",
+                                          "implicit_allow": "False"
+                                       }]
+                        }
+
+        action = req.params.get('Action')
+
+        armvalue = armappingdict[action]
+      
+        if action.startswith('Create'):
+            return armvalue  
+        #else if action.startswith('Delete'):
+
+        #else if action.startswith('Describe'):
+
+ 
     @webob.dec.wsgify(RequestClass=wsgi.Request)
     def __call__(self, req):
         request_id = context.generate_request_id()
@@ -199,18 +359,26 @@ class EC2KeystoneAuth(wsgi.Middleware):
             # Not part of authentication args
             params.pop('Signature', None)
 
+        #version = params.pop('Version')
+
+        arm = {}
+        arm = self._get_action_resource_mapping(req)
+
+        host = req.host.split(':')[0]
+
         cred_dict = {
             'access': access,
+            'action_resource_list': arm,
+            'body_hash': '',
+            'headers': {},
+            'host': host,
             'signature': signature,
-            'host': req.host,
             'verb': req.method,
-            'path': req.path,
+            'path': '/',
             'params': params,
-            'headers': req.headers,
-            'body_hash': body_hash
         }
 
-        token_url = CONF.keystone_ec2_tokens_url
+        token_url = CONF.keystone_ec2_auth_url
         if "ec2" in token_url:
             creds = {'ec2Credentials': cred_dict}
         else:
@@ -229,15 +397,24 @@ class EC2KeystoneAuth(wsgi.Middleware):
         result = response.json()
 
         try:
-            if 'token' in result:
+            if 'token_id' in result:
                 # NOTE(andrey-mp): response from keystone v3
-                token_id = response.headers['x-subject-token']
-                user_id = result['token']['user']['id']
-                project_id = result['token']['project']['id']
-                user_name = result['token']['user'].get('name')
-                project_name = result['token']['project'].get('name')
+                #token_id = response.headers['x-subject-token']
+                #user_id = result['token']['user']['id']
+                #project_id = result['token']['project']['id']
+                #user_name = result['token']['user'].get('name')
+                #project_name = result['token']['project'].get('name')
+                #roles = []
+                #catalog = result['token']['catalog']
+
+                
+                token_id = result['token_id']
+                user_id = result['user_id']
+                project_id = result['account_id']
+                user_name = None
+                project_name = None
                 roles = []
-                catalog = result['token']['catalog']
+                catalog = []
             else:
                 token_id = result['access']['token']['id']
                 user_id = result['access']['user']['id']
@@ -258,6 +435,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
             remote_address = req.headers.get('X-Forwarded-For',
                                              remote_address)
 
+        #req.params['Version'] = version
+
         ctxt = context.RequestContext(user_id, project_id,
                                       user_name=user_name,
                                       project_name=project_name,
@@ -276,7 +455,7 @@ class Requestify(wsgi.Middleware):
 
     @webob.dec.wsgify(RequestClass=wsgi.Request)
     def __call__(self, req):
-        non_args = ['Action', 'Signature', 'AWSAccessKeyId', 'SignatureMethod',
+        non_args = ['Action', 'Signature', 'JCSAccessKeyId', 'SignatureMethod',
                     'SignatureVersion', 'Version', 'Timestamp']
         args = dict(req.params)
         try:
