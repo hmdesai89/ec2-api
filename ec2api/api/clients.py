@@ -29,7 +29,7 @@ ec2_opts = [
                default='http://127.0.0.1:9696',
                help='Neutron EndPoint URL'),
     cfg.StrOpt('nova_endpoint_url',
-               default='http://127.0.0.1:8888',
+               default='http://127.0.0.1:8774/v2',
                help='Nova EndPoint URL'),
 ]
 
@@ -73,7 +73,8 @@ def nova(context):
         'cacert': CONF.ssl_ca_file
     }
     global _novaclient_vertion, _nova_service_type
-    bypass_url = _url_for(context, service_type=_nova_service_type)
+    #bypass_url = _url_for(context, service_type=_nova_service_type)
+    bypass_url = CONF.nova_endpoint_url
     if not bypass_url and _nova_service_type == 'computev21':
         # NOTE(ft): partial compatibility with pre Kilo OS releases:
         # if computev21 isn't provided by Nova, use compute instead
