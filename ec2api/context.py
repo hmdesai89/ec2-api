@@ -78,6 +78,7 @@ class RequestContext(object):
 
         self.user_id = user_id
         self.project_id = project_id
+        #self.tenant_id = project_id
         self.cached_secret_key = None
         self.roles = roles or []
         self.remote_address = remote_address
@@ -108,6 +109,7 @@ class RequestContext(object):
     def to_dict(self):
         return {'user_id': self.user_id,
                 'project_id': self.project_id,
+                #'tenant_id': self.project_id,
                 'is_admin': self.is_admin,
                 'roles': self.roles,
                 'remote_address': self.remote_address,

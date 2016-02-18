@@ -53,6 +53,7 @@ def create_subnet(context, vpc_id, cidr_block,
             context, main_route_table, gateway_ip)
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
+        #os_network_body = {'network': {'tenant_id':context.tenant_id}}
         os_network_body = {'network': {}}
         try:
             os_network = neutron.create_network(os_network_body)['network']
@@ -63,7 +64,13 @@ def create_subnet(context, vpc_id, cidr_block,
                                          'ip_version': '4',
                                          'cidr': cidr_block,
                                          'host_routes': host_routes}}
-            
+            '''
+            os_subnet_body = {'subnet': {'network_id': os_network['id'],
+                                         'ip_version': '4',
+                                         'cidr': cidr_block,
+                                         'host_routes': host_routes,
+                                         'tenant_id':context.tenant_id}}
+            '''
             os_subnet = neutron.create_subnet(os_subnet_body)['subnet']
             cleaner.addCleanup(neutron.delete_subnet, os_subnet['id'])
         except neutron_exception.OverQuotaClient:
