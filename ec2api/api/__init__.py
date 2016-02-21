@@ -125,81 +125,36 @@ class EC2KeystoneAuth(wsgi.Middleware):
 
     """Authenticate an EC2 request with keystone and convert to context."""
 
-    def _get_signature(self, req):
-        """Extract the signature from the request.
+    resourceIdMapping = {
+                          'CreateVpc' : '*',
+                          'CreateSubnet' : '*',
+                          'CreateRouteTable' : '*',
+                          'CreateRoute' : 'RouteTableId',
+                          'CreateSecurityGroup' : '*',
+                          'DeleteVpc' : 'VpcId',
+                          'DeleteSubnet' : 'SubnetId',
+                          'DeleteRouteTable' : 'RouteTableId',
+                          'DeleteSecurityGroup' : 'GroupId',
+                          'DeleteRoute' : 'RouteTableId',
+                          'AssociateRouteTable' : 'SubnetId',
+                          'DisassociateRouteTable' : 'AssociationId',
+                          'AuthorizeSecurityGroupIngress' : 'GroupId',
+                          'AuthorizeSecurityGroupEgress' : 'GroupId',
+                          'RevokeSecurityGroupEgress' : 'GroupId',
+                          'RevokeSecurityGroupIngress' : 'GroupId',
+                          'DescribeVpcs' : '*',
+                          'DescribeSubnets' : '*',
+                          'DescribeRouteTables' : '*',
+                          'DescribeSecurityGroups' : '*',
+                        }
 
-        This can be a get/post variable or for version 4 also in a header
-        called 'Authorization'.
-        - params['Signature'] == version 0,1,2,3
-        - params['X-Amz-Signature'] == version 4
-        - header 'Authorization' == version 4
-        """
-        sig = req.params.get('Signature') or req.params.get('X-Amz-Signature')
-        if sig is not None:
-            return sig
-
-        if 'Authorization' not in req.headers:
-            return None
-
-        auth_str = req.headers['Authorization']
-        if not auth_str.startswith('AWS4-HMAC-SHA256'):
-            return None
-
-        return auth_str.partition("Signature=")[2].split(',')[0]
-
-    def _get_access(self, req):
-        """Extract the access key identifier.
-
-        For version 0/1/2/3 this is passed as the AccessKeyId parameter, for
-        version 4 it is either an X-Amz-Credential parameter or a Credential=
-        field in the 'Authorization' header string.
-        """
-        access = req.params.get('JCSAccessKeyId')
-        if access is not None:
-            return access
-
-        cred_param = req.params.get('X-Amz-Credential')
-        if cred_param:
-            access = cred_param.split("/")[0]
-            if access is not None:
-                return access
-
-        if 'Authorization' not in req.headers:
-            return None
-        auth_str = req.headers['Authorization']
-        if not auth_str.startswith('AWS4-HMAC-SHA256'):
-            return None
-        cred_str = auth_str.partition("Credential=")[2].split(',')[0]
-        return cred_str.split("/")[0]
-
-    def _get_action_resource_mapping(self, req):
-
-        resourceIdMapping = {
-                              'CreateVpc' : '*',
-                              'CreateSubnet' : '*',
-                              'CreateRouteTable' : '*',
-                              'CreateRoute' : 'RouteTableId',
-                              'CreateSecurityGroup' : '*',
-                              'DeleteVpc' : 'VpcId',
-                              'DeleteSubnet' : 'SubnetId',
-                              'DeleteRouteTable' : 'RouteTableId',
-                              'DeleteSecurityGroup' : 'GroupId',
-                              'DeleteRoute' : 'RouteTableId',
-                              'AssociateRouteTable' : 'SubnetId', 
-                              'DisassociateRouteTable' : 'AssociationId',
-                              'AuthorizeSecurityGroupIngress' : 'GroupId',
-                              'AuthorizeSecurityGroupEgress' : 'GroupId',
-                              'RevokeSecurityGroupEgress' : 'GroupId',
-                              'RevokeSecurityGroupIngress' : 'GroupId',
-                            }
-
-        armappingdict = { 
+    armappingdict = {
                           'CreateVpc': [{
                                           "action": "jrn:jcs:vpc:CreateVpc",
                                           "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
                                        }],
-                          'DeleteVpc': 
+                          'DeleteVpc':
                                        [{
                                           "action": "jrn:jcs:vpc:DeleteVpc",
                                           "resource": "jrn:jcs:vpc::Vpc:",
@@ -208,7 +163,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DescribeVpcs':
                                        [{
                                           "action": "jrn:jcs:vpc:DescribeVpcs",
-                                          "resource": "jrn:jcs:vpc::Vpc:*",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
                                        }],
                           'CreateSubnet':
@@ -226,7 +181,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DescribeSubnets':
                                        [{
                                           "action": "jrn:jcs:vpc:DescribeSubnets",
-                                          "resource": "jrn:jcs:vpc::Subnet:*",
+                                          "resource": "jrn:jcs:vpc::Subnet:",
                                           "implicit_allow": "False"
                                        }],
                           'CreateRouteTable':
@@ -256,9 +211,9 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DescribeRouteTables':
                                        [{
                                           "action": "jrn:jcs:vpc:DescribeRouteTables",
-                                          "resource": "jrn:jcs:vpc::RouteTable:*",
+                                          "resource": "jrn:jcs:vpc::RouteTable:",
                                           "implicit_allow": "False"
-                                       }], 
+                                       }],
                           'CreateRoute':
                                        [{
                                           "action": "jrn:jcs:vpc:CreateRoute",
@@ -310,7 +265,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DescribeSecurityGroups':
                                        [{
                                           "action": "jrn:jcs:vpc:DescribeSecurityGroups",
-                                          "resource": "jrn:jcs:vpc::SecurityGroup:*",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
                                        }],
                           'AuthorizeSecurityGroupEgress':
@@ -332,55 +287,86 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                           "implicit_allow": "False"
                                        }],
                           'RevokeSecurityGroupIngress':
-                                       [{          
+                                       [{
                                           "action": "jrn:jcs:vpc:RevokeSecurityGroupIngress",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
                                        }]
-                        }
+                    }
+
+    def _get_signature(self, req):
+        """Extract the signature from the request.
+
+        This can be a get/post variable or for version 4 also in a header
+        called 'Authorization'.
+        - params['Signature'] == version 0,1,2,3
+        - params['X-Amz-Signature'] == version 4
+        - header 'Authorization' == version 4
+        """
+        sig = req.params.get('Signature') or req.params.get('X-Amz-Signature')
+        if sig is not None:
+            return sig
+
+        if 'Authorization' not in req.headers:
+            return None
+
+        auth_str = req.headers['Authorization']
+        if not auth_str.startswith('AWS4-HMAC-SHA256'):
+            return None
+
+        return auth_str.partition("Signature=")[2].split(',')[0]
+
+    def _get_access(self, req):
+        """Extract the access key identifier.
+
+        For version 0/1/2/3 this is passed as the AccessKeyId parameter, for
+        version 4 it is either an X-Amz-Credential parameter or a Credential=
+        field in the 'Authorization' header string.
+        """
+        access = req.params.get('JCSAccessKeyId')
+        if access is not None:
+            return access
+
+        cred_param = req.params.get('X-Amz-Credential')
+        if cred_param:
+            access = cred_param.split("/")[0]
+            if access is not None:
+                return access
+
+        if 'Authorization' not in req.headers:
+            return None
+        auth_str = req.headers['Authorization']
+        if not auth_str.startswith('AWS4-HMAC-SHA256'):
+            return None
+        cred_str = auth_str.partition("Credential=")[2].split(',')[0]
+        return cred_str.split("/")[0]
+
+    def _get_resource_id(self, req, action):
+
+        resource = None     
+        resourceId = None
+        
+        resource = self.resourceIdMapping[action]
+
+        if '*' == resource:
+            resourceId = resource
+        else:
+            resourceId = req.params.get(resource)
+
+        return resourceId
+
+    def _get_action_resource_mapping(self, req):
+
+        armvalue = None
 
         action = req.params.get('Action')
 
-        armvalue = armappingdict[action]
-      
-        if action.startswith('Create'):
-            resource = resourceIdMapping[action]
-            if '*' == resource:
-                armvalue[0]['resource'] = armvalue[0].get('resource') + resource
-                return armvalue  
-            else:
-                resourceId = req.params.get(resource)
-                armvalue[0]['resource'] = armvalue[0].get('resource') + resourceId
-                return armvalue
-        elif action.startswith('Delete'):
-            resource = resourceIdMapping[action]
-            resourceId = req.params.get(resource)
-            armvalue[0]['resource'] = armvalue[0].get('resource') + resourceId
+        try:
+            armvalue = self.armappingdict[action]
+        except KeyError:
             return armvalue
-        elif action.startswith('Describe'):
-            return armvalue
-        elif action.startswith('Associate'):
-            resource = resourceIdMapping[action]
-            resourceId = req.params.get(resource)
-            armvalue[0]['resource'] = armvalue[0].get('resource') + resourceId
-            return armvalue
-        elif action.startswith('Disassociate'):
-            resource = resourceIdMapping[action]
-            resourceId = req.params.get(resource)
-            armvalue[0]['resource'] = armvalue[0].get('resource') + resourceId
-            return armvalue
-        elif action.startswith('Authorize'):
-            resource = resourceIdMapping[action]
-            resourceId = req.params.get(resource)
-            armvalue[0]['resource'] = armvalue[0].get('resource') + resourceId
-            return armvalue
-        elif action.startswith('Revoke'):
-            resource = resourceIdMapping[action]
-            resourceId = req.params.get(resource)
-            armvalue[0]['resource'] = armvalue[0].get('resource') + resourceId
-            return armvalue
-        else:
-            return armvalue
+
+        return armvalue
              
     @webob.dec.wsgify(RequestClass=wsgi.Request)
     def __call__(self, req):
@@ -412,9 +398,26 @@ class EC2KeystoneAuth(wsgi.Middleware):
 
         #version = params.pop('Version')
 
+        action = req.params.get('Action')
+
         arm = {}
         arm = self._get_action_resource_mapping(req)
 
+        if None == arm:
+            msg = _("Action : " + action + " Not Found")
+            return faults.ec2_error_response(request_id, "ActionNotFound", msg,
+                                             status=404)
+
+        resourceId = None
+        resourceId = self._get_resource_id(req, action)
+
+        if None == resourceId:
+            msg = _("Action is : " + action + " and ResourceId Not Found")
+            return faults.ec2_error_response(request_id, "ResourceIdNotFound", msg,
+                                             status=404)
+
+        arm[0]['resource'] = arm[0].get('resource') + resourceId
+        
         host = req.host.split(':')[0]
 
         cred_dict = {
