@@ -146,6 +146,10 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DescribeSubnets' : '*',
                           'DescribeRouteTables' : '*',
                           'DescribeSecurityGroups' : '*',
+                          'AllocateAddress' : '',
+                          'AssociateAddress' : '',
+                          'DisassociateAddress' : '',
+                          'ReleaseAddress' : '',
                         }
 
     armappingdict = {
@@ -229,25 +233,21 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'AllocateAddress':
                                        [{
                                           "action": "jrn:jcs:vpc:AllocateAddress",
-                                          "resource": "jrn:jcs:vpc::Vpc:*",
                                           "implicit_allow": "False"
                                        }],
                           'AsscoiateAddress':
                                        [{
                                           "action": "jrn:jcs:vpc:AssociateAddress",
-                                          "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
                                        }],
                           'DisasscoiateAddress':
                                        [{
                                           "action": "jrn:jcs:vpc:DisassociateAddress",
-                                          "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
                                        }],
                           'ReleaseAddress':
                                        [{
                                           "action": "jrn:jcs:vpc:ReleaseAddress",
-                                          "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
                                        }],
                           'CreateSecurityGroup':
@@ -350,6 +350,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
 
         if '*' == resource:
             resourceId = resource
+        elif '' == resource:
+            resourceId = resource
         else:
             resourceId = req.params.get(resource)
 
@@ -415,9 +417,9 @@ class EC2KeystoneAuth(wsgi.Middleware):
             msg = _("Action is : " + action + " and ResourceId Not Found")
             return faults.ec2_error_response(request_id, "ResourceIdNotFound", msg,
                                              status=404)
-
-        arm[0]['resource'] = arm[0].get('resource') + resourceId
-        
+        if '' != resourceId:
+            arm[0]['resource'] = arm[0].get('resource') + resourceId
+ 
         host = req.host.split(':')[0]
 
         cred_dict = {
