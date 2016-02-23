@@ -231,25 +231,17 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                           "implicit_allow": "False"
                                        }],
                           'AllocateAddress':
-                                       [{
-                                          "action": "jrn:jcs:vpc:AllocateAddress",
-                                          "implicit_allow": "False"
-                                       }],
-                          'AsscoiateAddress':
-                                       [{
-                                          "action": "jrn:jcs:vpc:AssociateAddress",
-                                          "implicit_allow": "False"
-                                       }],
-                          'DisasscoiateAddress':
-                                       [{
-                                          "action": "jrn:jcs:vpc:DisassociateAddress",
-                                          "implicit_allow": "False"
-                                       }],
+                                       [
+                                       ],
+                          'AssociateAddress':
+                                       [
+                                       ],
+                          'DisassociateAddress':
+                                       [
+                                       ],
                           'ReleaseAddress':
-                                       [{
-                                          "action": "jrn:jcs:vpc:ReleaseAddress",
-                                          "implicit_allow": "False"
-                                       }],
+                                       [
+                                       ],
                           'CreateSecurityGroup':
                                        [{
                                           "action": "jrn:jcs:vpc:CreateSecurityGroup",
