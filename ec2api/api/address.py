@@ -49,7 +49,6 @@ def allocate_address(context, domain=None):
     #    msg = _("Invalid value '%(domain)s' for domain.") % {'domain': domain}
     #    raise exception.InvalidParameterValue(msg)
 
-    print domain
     if domain and domain not in ['vpc']:
         msg = _("Invalid value '%(domain)s' for domain.") % {'domain': domain}
         raise exception.InvalidParameterValue(msg)
