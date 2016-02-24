@@ -44,7 +44,13 @@ def get_address_engine():
 
 
 def allocate_address(context, domain=None):
-    if domain and domain not in ['vpc', 'standard']:
+    #Commenting below code as we are not supporting standard domain right now.
+    #if domain and domain not in ['vpc', 'standard']:
+    #    msg = _("Invalid value '%(domain)s' for domain.") % {'domain': domain}
+    #    raise exception.InvalidParameterValue(msg)
+
+    print domain
+    if domain and domain not in ['vpc']:
         msg = _("Invalid value '%(domain)s' for domain.") % {'domain': domain}
         raise exception.InvalidParameterValue(msg)
 
