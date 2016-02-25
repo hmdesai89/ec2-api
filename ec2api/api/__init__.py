@@ -486,7 +486,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
             else:
                 token_id = result['token_id']
 
-            if not token_id or not project_id or not user_id
+            if not token_id or not project_id or not user_id:
                 raise KeyError
 
             user_name = project_name = 'default'
