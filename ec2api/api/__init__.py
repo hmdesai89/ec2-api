@@ -478,22 +478,21 @@ class EC2KeystoneAuth(wsgi.Middleware):
         result = response.json()
 
         try:
-            if 'token_id' in result:
-                token_id = result['token_id']
-                user_id = result['user_id']
-                project_id = result['account_id']
-                user_name = None
-                project_name = None
-                roles = []
-                catalog = []
-            else:
+            user_id = result['user_id']
+            project_id = result['account_id']
+
+            if auth_token:
                 token_id = auth_token
-                user_id = result['user_id']
-                project_id = result['account_id']
-                user_name = None
-                project_name = None
-                roles = []
-                catalog = []
+            else:
+                token_id = result['token_id']
+
+            if not token_id or not project_id or not user_id
+                raise KeyError
+
+            user_name = project_name = 'default'
+
+            roles = []
+            catalog = []
         except (AttributeError, KeyError):
             LOG.exception(_("Keystone failure"))
             msg = _("Failure communicating with keystone")
