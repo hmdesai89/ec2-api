@@ -21,7 +21,6 @@ from rally import osclients
 from rally.plugins.openstack.wrappers import network as network_wrapper
 from rally.task import context
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -39,26 +38,29 @@ class PrepareEC2ClientContext(context.Context):
     def setup(self):
         """This method is called before the task start."""
         try:
+            i=0
             for user in self.context['users']:
-                osclient = osclients.Clients(user['credential'])
-                keystone = osclient.keystone()
-                creds = keystone.ec2.list(user['id'])
-                if not creds:
-                    creds = keystone.ec2.create(user['id'], user['tenant_id'])
-                else:
-                    creds = creds[0]
+                #osclient = osclients.Clients(user['credential'])
+                #keystone = osclient.keystone()
+                #creds = keystone.ec2.list(user['id'])
+                #if not creds:
+                #    creds = keystone.ec2.create(user['id'], user['tenant_id'])
+                #else:
+                #    creds = creds[0]
+                #print user
+                self.context['config']['existing_users'][i]
                 url = 'http://192.168.100.49:8788/services/Cloud'
-                url_parts = url.rpartition(':')
-                nova_url = (url_parts[0] + ':8773/'
-                            + url_parts[2].partition('/')[2])
+                #url_parts = url.rpartition(':')
+                #nova_url = (url_parts[0] + ':8773/'
+                #            + url_parts[2].partition('/')[2])
                 user['ec2args'] = {
                     'region': 'RegionOne',
                     'url': url,
-                    'nova_url': nova_url,
-                    'access': creds.access,
-                    'secret': creds.secret
+                    'nova_url': url,
+                    'access': self.context['config']['existing_users'][i]['access'],
+                    'secret': self.context['config']['existing_users'][i]['secret'],
                 }
-
+                i =+1
 #            if self.net_wrapper.SERVICE_IMPL == consts.Service.NEUTRON:
 #                for user, tenant_id in rutils.iterate_per_tenants(
 #                        self.context["users"]):
