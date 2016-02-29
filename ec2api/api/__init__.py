@@ -42,11 +42,14 @@ LOG = logging.getLogger(__name__)
 
 ec2_opts = [
     cfg.StrOpt('keystone_url',
-               default='http://localhost:5000/v2.0',
+               default='http://localhost:5000',
                help='URL to get token from ec2 request.'),
-    cfg.StrOpt('keystone_ec2_auth_url',
-               default='$keystone_url/ec2-auth',
-               help='URL to get token from ec2 request.'),
+    cfg.StrOpt('keystone_sig_url',
+               default='$keystone_url/v2.0/ec2-auth',
+               help='URL to validate signature/access key in ec2 request.'),
+    cfg.StrOpt('keystone_token_url',
+               default='$keystone_url/v3/token-auth',
+               help='URL to validate token in ec2 request.'),
     cfg.IntOpt('ec2_timestamp_expiry',
                default=300,
                help='Time in seconds before ec2 timestamp expires'),
@@ -150,6 +153,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'AssociateAddress' : '',
                           'DisassociateAddress' : '',
                           'ReleaseAddress' : '',
+                          'DescribeAddress' : '',
                         }
 
     armappingdict = {
@@ -240,6 +244,9 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                        [
                                        ],
                           'ReleaseAddress':
+                                       [
+                                       ],
+                          'DescribeAddress':
                                        [
                                        ],
                           'CreateSecurityGroup':
@@ -333,6 +340,17 @@ class EC2KeystoneAuth(wsgi.Middleware):
         cred_str = auth_str.partition("Credential=")[2].split(',')[0]
         return cred_str.split("/")[0]
 
+    def _get_auth_token(self, req):
+        """Extract the Auth token from the request
+
+        This is the header X-Auth-Token present in the request
+        """
+        auth_token = None
+
+        auth_token = req.headers.get('X-Auth-Token')
+
+        return auth_token
+
     def _get_resource_id(self, req, action):
 
         resource = None     
@@ -369,26 +387,30 @@ class EC2KeystoneAuth(wsgi.Middleware):
         # NOTE(alevine) We need to calculate the hash here because
         # subsequent access to request modifies the req.body so the hash
         # calculation will yield invalid results.
-        body_hash = hashlib.sha256(req.body).hexdigest()
 
-        signature = self._get_signature(req)
-        if not signature:
-            msg = _("Signature not provided")
-            return faults.ec2_error_response(request_id, "AuthFailure", msg,
-                                             status=400)
-        access = self._get_access(req)
-        if not access:
-            msg = _("Access key not provided")
-            return faults.ec2_error_response(request_id, "AuthFailure", msg,
-                                             status=400)
+        headers = {'Content-Type': 'application/json'}
 
-        if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
-            params = {}
-        else:
-            # Make a copy of args for authentication and signature verification
-            params = dict(req.params)
-            # Not part of authentication args
-            params.pop('Signature', None)
+        auth_token = self._get_auth_token(req)
+
+        if None == auth_token:
+            signature = self._get_signature(req)
+            if not signature:
+                msg = _("Signature not provided")
+                return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                                 status=400)
+            access = self._get_access(req)
+            if not access:
+                msg = _("Access key not provided")
+                return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                                 status=400)
+
+            if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
+                params = {}
+            else:
+                # Make a copy of args for authentication and signature verification
+                params = dict(req.params)
+                # Not part of authentication args
+                params.pop('Signature', None)
 
         #version = params.pop('Version')
 
@@ -411,32 +433,43 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                              status=404)
         if '' != resourceId:
             arm[0]['resource'] = arm[0].get('resource') + resourceId
- 
-        host = req.host.split(':')[0]
 
-        cred_dict = {
-            'access': access,
-            'action_resource_list': arm,
-            'body_hash': '',
-            'headers': {},
-            'host': host,
-            'signature': signature,
-            'verb': req.method,
-            'path': '/',
-            'params': params,
-        }
+        if auth_token:
+            data = {}
 
-        token_url = CONF.keystone_ec2_auth_url
-        if "ec2" in token_url:
-            creds = {'ec2Credentials': cred_dict}
+            iam_validation_url = CONF.keystone_token_url
+
+            headers['X-Auth-Token'] = auth_token
+            data['action_resource_list'] = arm
+
+            data = jsonutils.dumps(data)
         else:
-            creds = {'auth': {'OS-KSEC2:ec2Credentials': cred_dict}}
-        creds_json = jsonutils.dumps(creds)
-        headers = {'Content-Type': 'application/json'}
+            host = req.host.split(':')[0]
+
+            cred_dict = {
+                          'access': access,
+                          'action_resource_list': arm,
+                          'body_hash': '',
+                          'headers': {},
+                          'host': host,
+                          'signature': signature,
+                          'verb': req.method,
+                          'path': '/',
+                          'params': params,
+                       }
+
+            iam_validation_url = CONF.keystone_sig_url
+
+            if "ec2" in iam_validation_url:
+                creds = {'ec2Credentials': cred_dict}
+            else:
+                creds = {'auth': {'OS-KSEC2:ec2Credentials': cred_dict}}
+
+            data = jsonutils.dumps(creds)
 
         verify = CONF.ssl_ca_file or not CONF.ssl_insecure
-        response = requests.request('POST', token_url, verify=verify,
-                                    data=creds_json, headers=headers)
+        response = requests.request('POST', iam_validation_url, verify=verify,
+                                    data=data, headers=headers)
         status_code = response.status_code
         if status_code != 200:
             msg = response.reason
@@ -445,33 +478,21 @@ class EC2KeystoneAuth(wsgi.Middleware):
         result = response.json()
 
         try:
-            if 'token_id' in result:
-                # NOTE(andrey-mp): response from keystone v3
-                #token_id = response.headers['x-subject-token']
-                #user_id = result['token']['user']['id']
-                #project_id = result['token']['project']['id']
-                #user_name = result['token']['user'].get('name')
-                #project_name = result['token']['project'].get('name')
-                #roles = []
-                #catalog = result['token']['catalog']
+            user_id = result['user_id']
+            project_id = result['account_id']
 
-                
-                token_id = result['token_id']
-                user_id = result['user_id']
-                project_id = result['account_id']
-                user_name = None
-                project_name = None
-                roles = []
-                catalog = []
+            if auth_token:
+                token_id = auth_token
             else:
-                token_id = result['access']['token']['id']
-                user_id = result['access']['user']['id']
-                project_id = result['access']['token']['tenant']['id']
-                user_name = result['access']['user'].get('name')
-                project_name = result['access']['token']['tenant'].get('name')
-                roles = [role['name'] for role
-                         in result['access']['user']['roles']]
-                catalog = result['access']['serviceCatalog']
+                token_id = result['token_id']
+
+            if not token_id or not project_id or not user_id:
+                raise KeyError
+
+            user_name = project_name = 'default'
+
+            roles = []
+            catalog = []
         except (AttributeError, KeyError):
             LOG.exception(_("Keystone failure"))
             msg = _("Failure communicating with keystone")
@@ -482,8 +503,6 @@ class EC2KeystoneAuth(wsgi.Middleware):
         if CONF.use_forwarded_for:
             remote_address = req.headers.get('X-Forwarded-For',
                                              remote_address)
-
-        #req.params['Version'] = version
 
         ctxt = context.RequestContext(user_id, project_id,
                                       user_name=user_name,
