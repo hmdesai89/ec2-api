@@ -92,12 +92,8 @@ class CloudController(object):
     def __str__(self):
         return 'CloudController'
 
-
-    #making domain ID mendatory
-    #def allocate_address(self, context, domain=None):
-
     @module_and_param_types(address, 'str255')
-    def allocate_address(self, context, domain):
+    def allocate_address(self, context, domain=None):
         """Acquires an Elastic IP address.
 
         Args:
@@ -234,13 +230,10 @@ class CloudController(object):
             A list of security groups.
         """
 
-    #Creating VPC id mandatory for Security Group
-    #In future if you want to revert change do vpc_id=None
-
     @module_and_param_types(security_group, 'security_group_str',
                             'security_group_str', 'vpc_id')
     def create_security_group(self, context, group_name,
-                              group_description, vpc_id):
+                              group_description, vpc_id=None):
         """Creates a security group.
 
         Args:

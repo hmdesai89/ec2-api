@@ -52,6 +52,8 @@ class EC2APIPlugin(scenario.OpenStackScenario):
         return client
 
     def _run_both(self, base_name, func):
+        with ActionTimerWithoutFirst(self, base_name + '_nova'):
+            func(self, client)
         client = self._get_client(False)
         with ActionTimerWithoutFirst(self, base_name + '_ec2api'):
             func(self, client)
@@ -98,7 +100,7 @@ class EC2APIPlugin(scenario.OpenStackScenario):
     @_runner(_run_ec2)
     def describe_vpcs(self, client): 
         data = client.describe_vpcs()
-        self.assertTrue(True , err_msg="eRROR")
+        print data
 
     @scenario.configure()
     @_runner(_run_ec2)
@@ -133,21 +135,16 @@ class EC2APIPlugin(scenario.OpenStackScenario):
 
         data = client.describe_instances(InstanceIds=[instance_id])
 
-
-    @scenario.configure()
-    @_runner(_run_both)
-    def create_vpc(self, client, cidr):
-        data = client.create_vpc("")
-
-
-
     @scenario.configure()
     def describe_all_in_one(self):
-#        self.describe_security_groups()
+        #self.describe_addresses()
+        #self.describe_instances()
+        #self.describe_security_groups()
+        #self.describe_one_instance()
         self.describe_vpcs()
-#        self.describe_subnets()
-#        self.describe_network_interfaces()
-#        self.describe_route_tables()
+        #self.describe_subnets()
+        #self.describe_network_interfaces()
+        #self.describe_route_tables()
 
     @scenario.configure()
     def describe_networks(self):
@@ -156,28 +153,3 @@ class EC2APIPlugin(scenario.OpenStackScenario):
         self.describe_network_interfaces()
         self.describe_route_tables()
 
-    @scenario.configure()
-    def describe_all_vpc_elements(self):
-        self.describe_vpcs()
-        self.describe_subnets()
-        self.describe_network_interfaces()
-        self.describe_route_tables()
-        self.describe_security_groups()
-
-    @scenario.configure()
-    def test_all_vpc_apis_basic(self):
-        vpc_id = self.create_vpc("10.0.0.0/16")
-        self.describe_vpcs(vpc_id)
-        subnet_id = self.create_subnet(vpc_id)
-        self.describe_subnet(subnet_id)
-        route_table_id = self.create_route_table()
-        self.delete_route_table(route_table_id)
-        security_group_id = self.create_security_group()
-        self.authorize_security_group()
-        self.revoke_security_group()
-        self.delete_security_group(security_group_id)
-        self.allocate_address()
-        self.release_address()
-        self.delete_subnet(subnet_id)
-        self.delete_vpc(vpc_id)
-     
