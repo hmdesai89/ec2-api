@@ -153,7 +153,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'AssociateAddress' : '',
                           'DisassociateAddress' : '',
                           'ReleaseAddress' : '',
-                          'DescribeAddress' : '',
+                          'DescribeAddresses' : '',
                         }
 
     armappingdict = {
@@ -246,7 +246,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'ReleaseAddress':
                                        [
                                        ],
-                          'DescribeAddress':
+                          'DescribeAddresses':
                                        [
                                        ],
                           'CreateSecurityGroup':
