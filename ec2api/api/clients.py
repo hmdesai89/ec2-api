@@ -24,8 +24,17 @@ from ec2api.i18n import _, _LW
 
 logger = logging.getLogger(__name__)
 
-CONF = cfg.CONF
+ec2_opts = [
+    cfg.StrOpt('neutron_endpoint_url',
+               default='http://127.0.0.1:9696',
+               help='Neutron EndPoint URL'),
+    cfg.StrOpt('nova_endpoint_url',
+               default='http://127.0.0.1:8774/v2/',
+               help='Nova EndPoint URL'),
+]
 
+CONF = cfg.CONF
+CONF.register_opts(ec2_opts)
 
 try:
     from neutronclient.v2_0 import client as neutronclient
@@ -64,7 +73,8 @@ def nova(context):
         'cacert': CONF.ssl_ca_file
     }
     global _novaclient_vertion, _nova_service_type
-    bypass_url = _url_for(context, service_type=_nova_service_type)
+    #bypass_url = _url_for(context, service_type=_nova_service_type)
+    bypass_url = CONF.nova_endpoint_url + context.tenant
     if not bypass_url and _nova_service_type == 'computev21':
         # NOTE(ft): partial compatibility with pre Kilo OS releases:
         # if computev21 isn't provided by Nova, use compute instead
@@ -96,7 +106,9 @@ def neutron(context):
         'auth_url': CONF.keystone_url,
         'service_type': 'network',
         'token': context.auth_token,
-        'endpoint_url': _url_for(context, service_type='network'),
+        #'tenant_id': context.tenant,
+        #'endpoint_url': _url_for(context, service_type='network'),
+        'endpoint_url': CONF.neutron_endpoint_url,
         'insecure': CONF.ssl_insecure,
         'cacert': CONF.ssl_ca_file
     }

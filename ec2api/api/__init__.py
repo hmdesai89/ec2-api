@@ -16,6 +16,7 @@
 Starting point for routing EC2 requests.
 """
 import hashlib
+import json
 import sys
 
 from oslo_config import cfg
@@ -41,11 +42,14 @@ LOG = logging.getLogger(__name__)
 
 ec2_opts = [
     cfg.StrOpt('keystone_url',
-               default='http://localhost:5000/v2.0',
+               default='http://localhost:5000',
                help='URL to get token from ec2 request.'),
-    cfg.StrOpt('keystone_ec2_tokens_url',
-               default='$keystone_url/ec2tokens',
-               help='URL to get token from ec2 request.'),
+    cfg.StrOpt('keystone_sig_url',
+               default='$keystone_url/v2.0/ec2-auth',
+               help='URL to validate signature/access key in ec2 request.'),
+    cfg.StrOpt('keystone_token_url',
+               default='$keystone_url/v3/token-auth',
+               help='URL to validate token in ec2 request.'),
     cfg.IntOpt('ec2_timestamp_expiry',
                default=300,
                help='Time in seconds before ec2 timestamp expires'),
@@ -124,6 +128,171 @@ class EC2KeystoneAuth(wsgi.Middleware):
 
     """Authenticate an EC2 request with keystone and convert to context."""
 
+    resourceIdMapping = {
+                          'CreateVpc' : '*',
+                          'CreateSubnet' : '*',
+                          'CreateRouteTable' : '*',
+                          'CreateRoute' : 'RouteTableId',
+                          'CreateSecurityGroup' : '*',
+                          'DeleteVpc' : 'VpcId',
+                          'DeleteSubnet' : 'SubnetId',
+                          'DeleteRouteTable' : 'RouteTableId',
+                          'DeleteSecurityGroup' : 'GroupId',
+                          'DeleteRoute' : 'RouteTableId',
+                          'AssociateRouteTable' : 'SubnetId',
+                          'DisassociateRouteTable' : 'AssociationId',
+                          'AuthorizeSecurityGroupIngress' : 'GroupId',
+                          'AuthorizeSecurityGroupEgress' : 'GroupId',
+                          'RevokeSecurityGroupEgress' : 'GroupId',
+                          'RevokeSecurityGroupIngress' : 'GroupId',
+                          'DescribeVpcs' : '*',
+                          'DescribeSubnets' : '*',
+                          'DescribeRouteTables' : '*',
+                          'DescribeSecurityGroups' : '*',
+                          'AllocateAddress' : '',
+                          'AssociateAddress' : '',
+                          'DisassociateAddress' : '',
+                          'ReleaseAddress' : '',
+                          'DescribeAddress' : '',
+                        }
+
+    armappingdict = {
+                          'CreateVpc': [{
+                                          "action": "jrn:jcs:vpc:CreateVpc",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteVpc':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteVpc",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeVpcs':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeVpcs",
+                                          "resource": "jrn:jcs:vpc::Vpc:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'CreateSubnet':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateSubnet",
+                                          "resource": "jrn:jcs:vpc::Subnet:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteSubnet':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteSubnet",
+                                          "resource": "jrn:jcs:vpc::Subnet:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeSubnets':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeSubnets",
+                                          "resource": "jrn:jcs:vpc::Subnet:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'CreateRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateRouteTable",
+                                          "resource": "jrn:jcs:vpc::RouteTable:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteRouteTable",
+                                          "resource": "jrn:jcs:vpc::RouteTable:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AssociateRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AssociateRouteTable",
+                                          "resource": "jrn:jcs:vpc::Subnet:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DisassociateRouteTable':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DisassociateRouteTable",
+                                          "resource": "jrn:jcs:vpc::AssociatedRouteTable:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeRouteTables':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeRouteTables",
+                                          "resource": "jrn:jcs:vpc::RouteTable:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'CreateRoute':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateRoute",
+                                          "resource": "jrn:jcs:vpc::RouteTable:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteRoute':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteRoute",
+                                          "resource": "jrn:jcs:vpc::RouteTable:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AllocateAddress':
+                                       [
+                                       ],
+                          'AssociateAddress':
+                                       [
+                                       ],
+                          'DisassociateAddress':
+                                       [
+                                       ],
+                          'ReleaseAddress':
+                                       [
+                                       ],
+                          'DescribeAddress':
+                                       [
+                                       ],
+                          'CreateSecurityGroup':
+                                       [{
+                                          "action": "jrn:jcs:vpc:CreateSecurityGroup",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DeleteSecurityGroup':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DeleteSecurityGroup",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'DescribeSecurityGroups':
+                                       [{
+                                          "action": "jrn:jcs:vpc:DescribeSecurityGroups",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AuthorizeSecurityGroupEgress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AuthorizeSecurityGroupEgress",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'AuthorizeSecurityGroupIngress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:AuthorizeSecurityGroupIngress",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'RevokeSecurityGroupEgress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:RevokeSecurityGroupEgress",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
+                                          "implicit_allow": "False"
+                                       }],
+                          'RevokeSecurityGroupIngress':
+                                       [{
+                                          "action": "jrn:jcs:vpc:RevokeSecurityGroupIngress",
+                                          "resource": "jrn:jcs:vpc::SecurityGroup:",
+                                          "implicit_allow": "False"
+                                       }]
+                    }
+
     def _get_signature(self, req):
         """Extract the signature from the request.
 
@@ -153,7 +322,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
         version 4 it is either an X-Amz-Credential parameter or a Credential=
         field in the 'Authorization' header string.
         """
-        access = req.params.get('AWSAccessKeyId')
+        access = req.params.get('JCSAccessKeyId')
         if access is not None:
             return access
 
@@ -171,6 +340,46 @@ class EC2KeystoneAuth(wsgi.Middleware):
         cred_str = auth_str.partition("Credential=")[2].split(',')[0]
         return cred_str.split("/")[0]
 
+    def _get_auth_token(self, req):
+        """Extract the Auth token from the request
+
+        This is the header X-Auth-Token present in the request
+        """
+        auth_token = None
+
+        auth_token = req.headers.get('X-Auth-Token')
+
+        return auth_token
+
+    def _get_resource_id(self, req, action):
+
+        resource = None     
+        resourceId = None
+        
+        resource = self.resourceIdMapping[action]
+
+        if '*' == resource:
+            resourceId = resource
+        elif '' == resource:
+            resourceId = resource
+        else:
+            resourceId = req.params.get(resource)
+
+        return resourceId
+
+    def _get_action_resource_mapping(self, req):
+
+        armvalue = None
+
+        action = req.params.get('Action')
+
+        try:
+            armvalue = self.armappingdict[action]
+        except KeyError:
+            return armvalue
+
+        return armvalue
+             
     @webob.dec.wsgify(RequestClass=wsgi.Request)
     def __call__(self, req):
         request_id = context.generate_request_id()
@@ -178,49 +387,89 @@ class EC2KeystoneAuth(wsgi.Middleware):
         # NOTE(alevine) We need to calculate the hash here because
         # subsequent access to request modifies the req.body so the hash
         # calculation will yield invalid results.
-        body_hash = hashlib.sha256(req.body).hexdigest()
 
-        signature = self._get_signature(req)
-        if not signature:
-            msg = _("Signature not provided")
-            return faults.ec2_error_response(request_id, "AuthFailure", msg,
-                                             status=400)
-        access = self._get_access(req)
-        if not access:
-            msg = _("Access key not provided")
-            return faults.ec2_error_response(request_id, "AuthFailure", msg,
-                                             status=400)
-
-        if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
-            params = {}
-        else:
-            # Make a copy of args for authentication and signature verification
-            params = dict(req.params)
-            # Not part of authentication args
-            params.pop('Signature', None)
-
-        cred_dict = {
-            'access': access,
-            'signature': signature,
-            'host': req.host,
-            'verb': req.method,
-            'path': req.path,
-            'params': params,
-            'headers': req.headers,
-            'body_hash': body_hash
-        }
-
-        token_url = CONF.keystone_ec2_tokens_url
-        if "ec2" in token_url:
-            creds = {'ec2Credentials': cred_dict}
-        else:
-            creds = {'auth': {'OS-KSEC2:ec2Credentials': cred_dict}}
-        creds_json = jsonutils.dumps(creds)
         headers = {'Content-Type': 'application/json'}
 
+        auth_token = self._get_auth_token(req)
+
+        if None == auth_token:
+            signature = self._get_signature(req)
+            if not signature:
+                msg = _("Signature not provided")
+                return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                                 status=400)
+            access = self._get_access(req)
+            if not access:
+                msg = _("Access key not provided")
+                return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                                 status=400)
+
+            if 'X-Amz-Signature' in req.params or 'Authorization' in req.headers:
+                params = {}
+            else:
+                # Make a copy of args for authentication and signature verification
+                params = dict(req.params)
+                # Not part of authentication args
+                params.pop('Signature', None)
+
+        #version = params.pop('Version')
+
+        action = req.params.get('Action')
+
+        arm = {}
+        arm = self._get_action_resource_mapping(req)
+
+        if None == arm:
+            msg = _("Action : " + action + " Not Found")
+            return faults.ec2_error_response(request_id, "ActionNotFound", msg,
+                                             status=404)
+
+        resourceId = None
+        resourceId = self._get_resource_id(req, action)
+
+        if None == resourceId:
+            msg = _("Action is : " + action + " and ResourceId Not Found")
+            return faults.ec2_error_response(request_id, "ResourceIdNotFound", msg,
+                                             status=404)
+        if '' != resourceId:
+            arm[0]['resource'] = arm[0].get('resource') + resourceId
+
+        if auth_token:
+            data = {}
+
+            iam_validation_url = CONF.keystone_token_url
+
+            headers['X-Auth-Token'] = auth_token
+            data['action_resource_list'] = arm
+
+            data = jsonutils.dumps(data)
+        else:
+            host = req.host.split(':')[0]
+
+            cred_dict = {
+                          'access': access,
+                          'action_resource_list': arm,
+                          'body_hash': '',
+                          'headers': {},
+                          'host': host,
+                          'signature': signature,
+                          'verb': req.method,
+                          'path': '/',
+                          'params': params,
+                       }
+
+            iam_validation_url = CONF.keystone_sig_url
+
+            if "ec2" in iam_validation_url:
+                creds = {'ec2Credentials': cred_dict}
+            else:
+                creds = {'auth': {'OS-KSEC2:ec2Credentials': cred_dict}}
+
+            data = jsonutils.dumps(creds)
+
         verify = CONF.ssl_ca_file or not CONF.ssl_insecure
-        response = requests.request('POST', token_url, verify=verify,
-                                    data=creds_json, headers=headers)
+        response = requests.request('POST', iam_validation_url, verify=verify,
+                                    data=data, headers=headers)
         status_code = response.status_code
         if status_code != 200:
             msg = response.reason
@@ -229,24 +478,21 @@ class EC2KeystoneAuth(wsgi.Middleware):
         result = response.json()
 
         try:
-            if 'token' in result:
-                # NOTE(andrey-mp): response from keystone v3
-                token_id = response.headers['x-subject-token']
-                user_id = result['token']['user']['id']
-                project_id = result['token']['project']['id']
-                user_name = result['token']['user'].get('name')
-                project_name = result['token']['project'].get('name')
-                roles = []
-                catalog = result['token']['catalog']
+            user_id = result['user_id']
+            project_id = result['account_id']
+
+            if auth_token:
+                token_id = auth_token
             else:
-                token_id = result['access']['token']['id']
-                user_id = result['access']['user']['id']
-                project_id = result['access']['token']['tenant']['id']
-                user_name = result['access']['user'].get('name')
-                project_name = result['access']['token']['tenant'].get('name')
-                roles = [role['name'] for role
-                         in result['access']['user']['roles']]
-                catalog = result['access']['serviceCatalog']
+                token_id = result['token_id']
+
+            if not token_id or not project_id or not user_id:
+                raise KeyError
+
+            user_name = project_name = 'default'
+
+            roles = []
+            catalog = []
         except (AttributeError, KeyError):
             LOG.exception(_("Keystone failure"))
             msg = _("Failure communicating with keystone")
@@ -276,7 +522,7 @@ class Requestify(wsgi.Middleware):
 
     @webob.dec.wsgify(RequestClass=wsgi.Request)
     def __call__(self, req):
-        non_args = ['Action', 'Signature', 'AWSAccessKeyId', 'SignatureMethod',
+        non_args = ['Action', 'Signature', 'JCSAccessKeyId', 'SignatureMethod',
                     'SignatureVersion', 'Version', 'Timestamp']
         args = dict(req.params)
         try:

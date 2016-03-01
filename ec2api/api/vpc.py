@@ -43,6 +43,7 @@ Validator = common.Validator
 def create_vpc(context, cidr_block, instance_tenancy='default'):
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
+        #os_router_body = {'router': {'tenant_id':context.tenant_id}}
         os_router_body = {'router': {}}
         try:
             os_router = neutron.create_router(os_router_body)['router']
