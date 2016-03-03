@@ -198,10 +198,10 @@ def _format_subnet(context, subnet, os_subnet, os_network, os_ports):
         ip_count -= 1
     return {
         'subnetId': subnet['id'],
-        'state': status_map.get(os_network['status'], 'available'),
+        #'state': status_map.get(os_network['status'], 'available'),
         'vpcId': subnet['vpc_id'],
         'cidrBlock': os_subnet['cidr'],
-        'defaultForAz': 'false',
-        'mapPublicIpOnLaunch': 'false',
+        #'defaultForAz': 'false',
+        #'mapPublicIpOnLaunch': 'false',
         'availableIpAddressCount': ip_count
     }
