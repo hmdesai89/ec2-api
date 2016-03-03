@@ -42,13 +42,14 @@ from ec2api.api import volume
 from ec2api.api import vpc
 from ec2api import exception
 
+
+
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
 def module_and_param_types(module, *args, **kwargs):
     """Decorator to check types and call function."""
-
     param_types = args
 
     def wrapped(func):
@@ -1338,7 +1339,7 @@ class VpcCloudController(CloudController):
 
 
     @module_and_param_types(route_table, 'subnet_id', 'subnet_id')
-    def create_admin_router(self, context, subnet_id1, subnet_id2):
+    def create_admin_router(self, context, first_subnet, second_subnet):
         """Creates an admin router to connect to RDS subnets.
 
         Args:

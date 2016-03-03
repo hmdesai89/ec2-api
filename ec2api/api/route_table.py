@@ -30,8 +30,9 @@ Validator = common.Validator
 
 
 
-def create_admin_router(context, subnetid1, subnetid2):
+def create_admin_router(context, first_subnet, second_subnet):
     print "Calling CreateAdminApi"
+    return {'harsh': 'harsh'}
 
 
 
