@@ -29,6 +29,12 @@ from ec2api.i18n import _
 Validator = common.Validator
 
 
+
+def create_admin_router(context, subnetid1, subnetid2):
+    print "Calling CreateAdminApi"
+
+
+
 def create_route_table(context, vpc_id):
     vpc = ec2utils.get_db_item(context, vpc_id)
     route_table = _create_route_table(context, vpc)

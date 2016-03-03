@@ -1336,6 +1336,24 @@ class VpcCloudController(CloudController):
         table with a subnet.
         """
 
+
+    @module_and_param_types(route_table, 'subnet_id', 'subnet_id')
+    def create_admin_router(self, context, subnet_id1, subnet_id2):
+        """Creates an admin router to connect to RDS subnets.
+
+        Args:
+            context (RequestContext): The request context.
+            subent_id1 (str): The ID of the first Subnet.
+            subent_id2 (str): The ID of the Second Subnet.
+
+        Returns:
+            Information about the admin router
+
+        After you create an admin router, you can reach two subnets.
+        """
+
+
+
     @module_and_param_types(route_table, 'rtb_id', 'cidr',
                             'igw_id', 'i_id',
                             'eni_id',
