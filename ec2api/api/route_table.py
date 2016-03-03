@@ -393,7 +393,7 @@ def _format_route_table(context, route_table, is_main=False,
                        'routeSet': [],
                        # NOTE(ft): AWS returns empty tag set for a route table
                        # if no tag exists
-                       'tagSet': []}
+                       #'tagSet': []}
     # TODO(ft): refactor to get Nova instances outside of this function
     nova = clients.nova(context)
     for route in route_table['routes']:
@@ -413,8 +413,8 @@ def _format_route_table(context, route_table, is_main=False,
                          if gateway and gateway.get('vpc_id') == vpc_id else
                          'blackhole')
                 ec2_gateway_id = gateway_id
-            ec2_route.update({'gatewayId': ec2_gateway_id,
-                              'state': state})
+            #ec2_route.update({'gatewayId': ec2_gateway_id,
+            #                  'state': state})
         else:
             network_interface_id = route['network_interface_id']
             network_interface = network_interfaces.get(network_interface_id)
@@ -433,8 +433,8 @@ def _format_route_table(context, route_table, is_main=False,
                         pass
                 ec2_route.update({'instanceId': instance_id,
                                   'instanceOwnerId': context.project_id})
-            ec2_route.update({'networkInterfaceId': network_interface_id,
-                              'state': state})
+            ec2_route.update({'networkInterfaceId': network_interface_id})
+                             # 'state': state})
         ec2_route_table['routeSet'].append(ec2_route)
 
     associations = []
