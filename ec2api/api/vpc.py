@@ -133,8 +133,8 @@ def describe_vpcs(context, vpc_id=None, filter=None):
 
 def _format_vpc(vpc):
     return {'vpcId': vpc['id'],
-            'state': "available",
+            #'state': "available",
             'cidrBlock': vpc['cidr_block'],
-            'isDefault': False,
-            'dhcpOptionsId': vpc.get('dhcp_options_id', 'default'),
+            #'isDefault': False,
+            #'dhcpOptionsId': vpc.get('dhcp_options_id', 'default'),
             }
