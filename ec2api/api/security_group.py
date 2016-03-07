@@ -164,10 +164,9 @@ class SecurityGroupDescriber(common.TaggableItemsDescriber):
         return had_to_repair
 
 
-def describe_security_groups(context, group_name=None, group_id=None,
-                             filter=None):
+def describe_security_groups(context, group_id=None, filter=None):
     formatted_security_groups = SecurityGroupDescriber().describe(
-        context, group_id, group_name, filter)
+        context, group_id, None, filter)
     return {'securityGroupInfo': formatted_security_groups}
 
 
