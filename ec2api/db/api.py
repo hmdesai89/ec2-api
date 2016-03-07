@@ -106,6 +106,9 @@ def get_items(context, kind):
 def get_item_by_id(context, item_id):
     return IMPL.get_item_by_id(context, item_id)
 
+def get_item_by_id_without_context(context, item_id):
+    return IMPL.get_item_by_id_without_context(context, item_id)
+
 
 def get_items_by_ids(context, item_ids):
     return IMPL.get_items_by_ids(context, item_ids)

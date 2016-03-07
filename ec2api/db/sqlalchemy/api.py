@@ -200,6 +200,13 @@ def get_item_by_id(context, item_id):
             first()))
 
 
+#Get item by using just ID not the context
+def get_item_by_id_without_context(context, item_id):
+    return (_unpack_item_data(model_query(context, models.Item).
+            filter_by(id=item_id).first()))
+
+
+
 @require_context
 def get_items_by_ids(context, item_ids):
     if not item_ids:

@@ -17,6 +17,8 @@ import copy
 
 import netaddr
 from novaclient import exceptions as nova_exception
+from neutronclient.common import exceptions as neutron_exception 
+
 
 from ec2api.api import clients
 from ec2api.api import common
@@ -29,11 +31,169 @@ from ec2api.i18n import _
 Validator = common.Validator
 
 
+class AdmnRtrDescriber(common.TaggableItemsDescriber,
+                   common.NonOpenstackItemsDescriber):
+
+    KIND = 'admnRtr'
+#    FILTER_MAP = {'AdmnRouterId': 'AdmnRouterId', 
+#                   'dhcp-options-id': 'dhcpOptionsId',   
+#                   'is-default': 'isDefault', 
+#                   'state': 'state',   
+#                   'vpc-id': 'vpcId'}   
+   
+    def format(self, item=None, os_item=None):     
+        return _format_admnRtr(item) 
+
+
+
 
 def create_admin_router(context, first_subnet, second_subnet):
-    print "Calling CreateAdminApi"
-    return {'harsh': 'harsh'}
+    subnet1 = ec2utils.get_db_item_without_context(context, first_subnet)
+    subnet2 = ec2utils.get_db_item_without_context(context, second_subnet)
+    neutron = clients.neutron(context)
 
+
+    try: 
+        os_router = neutron.create_router({'router': {}})['router'] 
+    except neutron_exception.OverQuotaClient: 
+        raise exception.VpcLimitExceeded() 
+    
+    with common.OnCrashCleaner() as cleaner: 
+        cleaner.addCleanup(neutron.delete_router, os_router['id']) 
+
+#    #instead of using below code you can use create_network_interface api as well
+        try:
+            os_network1 = neutron.show_subnet(subnet1['os_id'])['subnet']['network_id']
+            os_network2 = neutron.show_subnet(subnet2['os_id'])['subnet']['network_id']
+        except neutron_exceprion.NotFound:
+            raise pass
+       
+        try:
+            os_port1 = neutron.create_port({'port' : {'network_id' : os_network1}})['port']
+        except (neutron_exception.IpAddressGenerationFailureClient, 
+            neutron_exception.OverQuotaClient):
+            raise exception.NetworkInterfaceLimitExceeded(
+                 subnet_id=subnet1['id'])
+    
+        cleaner.addCleanup(neutron.delete_port, os_port1['id'])
+
+        try:
+            neutron.add_interface_router(os_router['id'], {'port_id' : os_port1['id']} )
+
+        except neutron_exception.BadRequest:
+            raise exception.InvalidSubnetConflict(cidr_block=subnet1['id'])
+
+        cleaner.addCleanup(neutron.remove_interface_router,
+              os_router['id'], {'port_id': os_port1['id']})
+    
+    
+        try:
+            os_port2 = neutron.create_port({'port' : {'network_id' : os_network2}})['port']
+        except (neutron_exception.IpAddressGenerationFailureClient,
+            neutron_exception.OverQuotaClient):
+            raise exception.NetworkInterfaceLimitExceeded(
+                 subnet_id=subnet2['id'])
+    
+        cleaner.addCleanup(neutron.delete_port, os_port2['id'])
+    
+        try:
+            neutron.add_interface_router(os_router['id'], {'port_id' : os_port1['id']} )
+    
+        except neutron_exception.BadRequest:
+            raise exception.InvalidSubnetConflict(cidr_block=subnet1['id'])
+    #
+    
+        cleaner.addCleanup(neutron.remove_interface_router,
+              os_router['id'], {'subnet_id': os_port2['id']})
+    
+
+
+#   #Add an admn router in database
+    admRtr = db_api.add_item(context, 'admnRtr',{ 'os_id': os_router['id'],
+                                'FirstSubnet':{ 'Subnet': subnet1['id'], 'port': os_port1['id'],
+                                'PrivateIp': os_port1['fixed_ips'][0]['ip_address']}, 
+                                'SecondSubnet': { 'Subnet': subnet2['id'], 'port': os_port2['id'],
+                                'PrivateIp': os_port2['fixed_ips'][0]['ip_address']} })
+
+#
+
+    neutron.update_router(os_router['id'], {'router': {'name': admRtr['id']}})
+    return {'AdminRouterId': admRtr['id'], 'FirstSubnet':{ 'Subnet': subnet1['id'],
+                                'PrivateIp': os_port1['fixed_ips'][0]['ip_address']},
+                                'SecondSubnet': { 'Subnet': subnet2['id'],
+                                'PrivateIp': os_port2['fixed_ips'][0]['ip_address']}}
+
+
+def delete_admin_router(context,admin_router_id):
+
+    admnRtr = ec2utils.get_db_item(context, admin_router_id)
+    print admnRtr['os_id']
+    neutron = clients.neutron(context) 
+    with common.OnCrashCleaner() as cleaner:
+        db_api.delete_item(context, admnRtr['id']) 
+        cleaner.addCleanup(db_api.restore_item, context, 'admnRtr', admnRtr) 
+        try: 
+            neutron.remove_interface_router(admnRtr['os_id'], 
+                                             {'port_id': admnRtr['FirstSubnet']['port']}) 
+        except neutron_exception.NotFound
+            msg = _("The Admin Router '%(rtb_id)s' has dependencies and cannot "
+                    "be deleted.") % {'rtb_id': admin_router_id}
+            raise exception.DependencyViolation(msg)
+        
+        cleaner.addCleanup(neutron.add_interface_router, 
+                            admnRtr['os_id'], 
+                            {'port_id': admnRtr['FirstSubnet']['port']})
+
+        try:
+            neutron.remove_interface_router(admnRtr['os_id'],
+                                             {'port_id': admnRtr['SecondSubnet']['port']})
+        except neutron_exception as ex : 
+            msg = _("The Admin Router '%(rtb_id)s' has dependencies and cannot "
+                    "be deleted.") % {'rtb_id': admin_router_id}
+            raise exception.DependencyViolation(msg)
+
+
+        cleaner.addCleanup(neutron.add_interface_router, 
+                            admnRtr['os_id'],
+                            {'port_id': admnRtr['SecondSubnet']['port']})
+
+
+        try: 
+            neutron.delete_router(admnRtr['os_id']) 
+        except neutron_exception.NotFound: 
+            raise exception.InvalidRouteTableIDNotFound()
+
+
+
+        try: 
+            neutron.delete_port(admnRtr['FirstSubnet']['port']) 
+        except neutron_exception.PortNotFoundClient: 
+            pass
+
+        try:     
+            neutron.delete_port(admnRtr['SecondSubnet']['port'])
+        except neutron_exception.PortNotFoundClient:     
+            pass
+
+
+    return True
+
+def describe_admin_routers(context):
+
+    formatted_admnRtrs = AdmnRtrDescriber().describe( 
+        context) 
+    return {'admnRtrsSet': formatted_admnRtrs}
+
+
+
+    def format(self, item=None, os_item=None): 
+        return _format_admnRtr(item) 
+
+def _format_admnRtr(admnRtr):
+    return { 'AdminRouterId': admnRtr['id'], 'FirstSubnet':{ 'Subnet': admnRtr['FirstSubnet']['Subnet'],
+                                'PrivateIp': admnRtr['FirstSubnet']['PrivateIp']},
+                                'SecondSubnet': { 'Subnet': admnRtr['SecondSubnet']['Subnet'],
+                                'PrivateIp': admnRtr['SecondSubnet']['PrivateIp']}}
 
 
 def create_route_table(context, vpc_id):

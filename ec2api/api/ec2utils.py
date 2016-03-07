@@ -214,6 +214,29 @@ def get_db_item(context, ec2_id, expected_kind=None):
     return item
 
 
+
+def get_db_item_without_context(context, ec2_id, expected_kind=None):
+    """Get an DB item without context, raise AWS compliant exception if it's not found.
+
+        Args:
+            context (RequestContext): The request context.
+            ec2_id (str): The ID of the requested item.
+            expected_kind (str): The expected kind of the requested item.
+                It should be specified for a kind of ec2_id to be validated,
+                if you need it.
+
+        Returns:
+            The DB item.
+    """
+    item = db_api.get_item_by_id_without_context(context, ec2_id)
+    if (item is None or
+            expected_kind and get_ec2_id_kind(ec2_id) != expected_kind):
+        kind = expected_kind or get_ec2_id_kind(ec2_id)
+        params = {'id': ec2_id}
+        raise NOT_FOUND_EXCEPTION_MAP[kind](**params)
+    return item
+
+
 def get_db_items(context, kind, ec2_ids):
     if not ec2_ids:
         return db_api.get_items(context, kind)

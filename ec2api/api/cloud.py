@@ -1355,6 +1355,34 @@ class VpcCloudController(CloudController):
 
 
 
+    @module_and_param_types(route_table)
+    def describe_admin_routers(self, context):
+        """Describes an admin router to connect to RDS subnets.
+
+        Args:
+            context (RequestContext): The request context.
+
+        Returns:
+            Information about the admin router
+
+        """
+
+    @module_and_param_types(route_table, 'dummy')
+    def delete_admin_router(self, context, admin_router_id):
+        """Deletes an admin router and frees up port connected to it.
+
+        Args:
+            context (RequestContext): The request context.
+            admnRtr_id (str) : Admin Router Id
+
+        Returns:
+            True : if successfully deleted the router
+
+        """
+
+
+
+
     @module_and_param_types(route_table, 'rtb_id', 'cidr',
                             'igw_id', 'i_id',
                             'eni_id',
