@@ -363,10 +363,13 @@ class UniversalDescriber(object):
             if (formatted_item and
                     not self.filtered_out(formatted_item, filter)):
                 formatted_items.append(formatted_item)
+        #JNT-37:commented obsolete delete.
+        #reason: describe by name deleting entries from ec2db
+
         # NOTE(Alex): delete obsolete items
-        for item in self.items:
-            if item['id'] not in paired_items_ids:
-                self.delete_obsolete_item(item)
+        # for item in self.items:
+        #     if item['id'] not in paired_items_ids:
+        #         self.delete_obsolete_item(item)
         # NOTE(Alex): some requested items are not found
         if self.ids or self.names:
             params = {'id': next(iter(self.ids or self.names))}

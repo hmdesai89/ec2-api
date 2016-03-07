@@ -217,10 +217,8 @@ class CloudController(object):
             A list of Elastic IP addresses.
         """
 
-    @module_and_param_types(security_group, 'security_group_strs',
-                            'sg_ids', 'filter')
-    def describe_security_groups(self, context, group_name=None,
-                                 group_id=None, filter=None):
+    @module_and_param_types(security_group, 'sg_ids', 'filter')
+    def describe_security_groups(self, context, group_id=None, filter=None):
         """Describes one or more of your security groups.
 
         Args:
