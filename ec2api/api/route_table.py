@@ -66,7 +66,7 @@ def create_admin_router(context, first_subnet, second_subnet):
             os_network1 = neutron.show_subnet(subnet1['os_id'])['subnet']['network_id']
             os_network2 = neutron.show_subnet(subnet2['os_id'])['subnet']['network_id']
         except neutron_exceprion.NotFound:
-            raise pass
+            pass
        
         try:
             os_port1 = neutron.create_port({'port' : {'network_id' : os_network1}})['port']
@@ -135,7 +135,7 @@ def delete_admin_router(context,admin_router_id):
         try: 
             neutron.remove_interface_router(admnRtr['os_id'], 
                                              {'port_id': admnRtr['FirstSubnet']['port']}) 
-        except neutron_exception.NotFound
+        except neutron_exception.NotFound :
             msg = _("The Admin Router '%(rtb_id)s' has dependencies and cannot "
                     "be deleted.") % {'rtb_id': admin_router_id}
             raise exception.DependencyViolation(msg)
