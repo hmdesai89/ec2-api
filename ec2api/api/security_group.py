@@ -223,7 +223,7 @@ def _validate_parameters(protocol, from_port, to_port):
         if from_port < -1 or from_port > 255:
             raise exception.InvalidParameterValue(
                 _('ICMP type is out of range.'))
-        if to_port < -1 or to_port > 255:
+        if (to_port < -1 or to_port > 255) and (to_port != 65535):
             raise exception.InvalidParameterValue(
                 _('ICMP code is out of range.'))
 
