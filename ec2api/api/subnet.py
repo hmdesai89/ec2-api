@@ -38,6 +38,60 @@ LOG = logging.getLogger(__name__)
 
 Validator = common.Validator
 
+def create_extnetwork(context, cidr_block, start, end, gatewayip):
+
+    subnet_ipnet = netaddr.IPNetwork(cidr_block)
+    ext_net_name = 'public'
+    subnet_name = 'public-subnet'
+
+    neutron = clients.neutron(context)
+    with common.OnCrashCleaner() as cleaner:
+        os_network_body = {
+                            'network': {
+                                         'name' : ext_net_name,
+                                         'router:external' : True,
+                                         'shared' : False,
+                                       }
+                          }
+        try:
+            os_network = neutron.create_network(os_network_body)['network']
+            cleaner.addCleanup(neutron.delete_network, os_network['id'])
+
+            os_subnet_body = {
+                               'subnet': {
+                                           'network_id': os_network['id'],
+                                           'ip_version': '4',
+                                           'cidr': cidr_block,
+                                           'allocation_pools' : [{
+                                                                   'start' : start,
+                                                                   'end' : end
+                                                                }],
+                                           'gateway_ip' : gatewayip,
+                                           'enable_dhcp' : False,
+                                         }
+                             }
+
+            os_subnet = neutron.create_subnet(os_subnet_body)['subnet']
+            cleaner.addCleanup(neutron.delete_subnet, os_subnet['id'])
+        except neutron_exception.OverQuotaClient:
+            raise exception.SubnetLimitExceeded()
+
+    return {'public-subnet': _format_ext_subnet(context, os_subnet, os_network)}
+
+def _format_ext_subnet(context, os_subnet, os_network):
+    status_map = {'ACTIVE': 'available',
+                  'BUILD': 'pending',
+                  'DOWN': 'available',
+                  'ERROR': 'available'}
+    return {
+        'networkName':os_network['name'],
+        'networkId': os_network['id'],
+        'subnetName': os_subnet['name'],
+        'subnetId': os_subnet['id'],
+        'state': status_map.get(os_network['status'], 'available'),
+        'cidrBlock': os_subnet['cidr'],
+        'allocation-pools': os_subnet['allocation_pools'],
+    }
 
 def create_subnet(context, vpc_id, cidr_block,
                   availability_zone=None):

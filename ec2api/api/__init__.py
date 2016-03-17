@@ -154,6 +154,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DisassociateAddress' : '',
                           'ReleaseAddress' : '',
                           'DescribeAddresses' : '',
+                          'CreateExtnetwork' : ''
                         }
 
     armappingdict = {
@@ -290,7 +291,10 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                           "action": "jrn:jcs:vpc:RevokeSecurityGroupIngress",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }]
+                                       }],
+                          'CreateExtnetwork':
+                                       [
+                                       ]
                     }
 
     def _get_signature(self, req):
