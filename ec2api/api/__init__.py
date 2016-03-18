@@ -42,13 +42,13 @@ LOG = logging.getLogger(__name__)
 
 ec2_opts = [
     cfg.StrOpt('keystone_url',
-               default='http://localhost:5000',
+               default='http://localhost',
                help='URL to get token from ec2 request.'),
     cfg.StrOpt('keystone_sig_url',
-               default='$keystone_url/v2.0/ec2-auth',
+               default='$keystone_url/ec2-auth',
                help='URL to validate signature/access key in ec2 request.'),
     cfg.StrOpt('keystone_token_url',
-               default='$keystone_url/v3/token-auth',
+               default='$keystone_url/token-auth',
                help='URL to validate token in ec2 request.'),
     cfg.IntOpt('ec2_timestamp_expiry',
                default=300,
