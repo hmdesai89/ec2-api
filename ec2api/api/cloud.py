@@ -1319,6 +1319,13 @@ class VpcCloudController(CloudController):
             A list of subnets.
         """
 
+    @module_and_param_types(subnet, 'subnet_cidr', 
+                            'ip', 'ip', 'ip',)
+    def create_extnetwork(self, context, cidr_block,
+                          start, end, gatewayip):
+        """
+        """
+
     @module_and_param_types(route_table, 'vpc_id')
     def create_route_table(self, context, vpc_id):
         """Creates a route table for the specified VPC.
