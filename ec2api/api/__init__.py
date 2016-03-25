@@ -471,6 +471,10 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                     data=data, headers=headers)
         status_code = response.status_code
         if status_code != 200:
+            LOG.error("Request headers - %s", str(headers))
+            LOG.error("Request params - %s", str(data))
+            LOG.error("Response headers - %s", str(response.headers))
+            LOG.error("Response content - %s", str(response._content))
             msg = response.reason
             return faults.ec2_error_response(request_id, "AuthFailure", msg,
                                              status=status_code)
