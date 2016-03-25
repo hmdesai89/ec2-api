@@ -158,143 +158,131 @@ class EC2KeystoneAuth(wsgi.Middleware):
                         }
 
     armappingdict = {
-                          'CreateVpc': [{
+                          'CreateVpc': {
                                           "action": "jrn:jcs:vpc:CreateVpc",
                                           "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DeleteVpc':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DeleteVpc",
                                           "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DescribeVpcs':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DescribeVpcs",
                                           "resource": "jrn:jcs:vpc::Vpc:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'CreateSubnet':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:CreateSubnet",
                                           "resource": "jrn:jcs:vpc::Subnet:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DeleteSubnet':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DeleteSubnet",
                                           "resource": "jrn:jcs:vpc::Subnet:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DescribeSubnets':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DescribeSubnets",
                                           "resource": "jrn:jcs:vpc::Subnet:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'CreateRouteTable':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:CreateRouteTable",
                                           "resource": "jrn:jcs:vpc::RouteTable:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DeleteRouteTable':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DeleteRouteTable",
                                           "resource": "jrn:jcs:vpc::RouteTable:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'AssociateRouteTable':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:AssociateRouteTable",
                                           "resource": "jrn:jcs:vpc::Subnet:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DisassociateRouteTable':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DisassociateRouteTable",
                                           "resource": "jrn:jcs:vpc::AssociatedRouteTable:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DescribeRouteTables':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DescribeRouteTables",
                                           "resource": "jrn:jcs:vpc::RouteTable:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'CreateRoute':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:CreateRoute",
                                           "resource": "jrn:jcs:vpc::RouteTable:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DeleteRoute':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DeleteRoute",
                                           "resource": "jrn:jcs:vpc::RouteTable:",
                                           "implicit_allow": "False"
-                                       }],
-                          'AllocateAddress':
-                                       [
-                                       ],
-                          'AssociateAddress':
-                                       [
-                                       ],
-                          'DisassociateAddress':
-                                       [
-                                       ],
-                          'ReleaseAddress':
-                                       [
-                                       ],
-                          'DescribeAddresses':
-                                       [
-                                       ],
+                                       },
+                          'AllocateAddress': None,
+                          'AssociateAddress': None,
+                          'DisassociateAddress': None,
+                          'ReleaseAddress': None,
+                          'DescribeAddresses': None,
                           'CreateSecurityGroup':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:CreateSecurityGroup",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DeleteSecurityGroup':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DeleteSecurityGroup",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'DescribeSecurityGroups':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:DescribeSecurityGroups",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'AuthorizeSecurityGroupEgress':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:AuthorizeSecurityGroupEgress",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'AuthorizeSecurityGroupIngress':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:AuthorizeSecurityGroupIngress",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'RevokeSecurityGroupEgress':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:RevokeSecurityGroupEgress",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }],
+                                       },
                           'RevokeSecurityGroupIngress':
-                                       [{
+                                       {
                                           "action": "jrn:jcs:vpc:RevokeSecurityGroupIngress",
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
-                                       }],
-                          'CreateExtnetwork':
-                                       [
-                                       ]
+                                       },
+                          'CreateExtnetwork': None
                     }
 
     def _get_signature(self, req):
@@ -378,7 +366,14 @@ class EC2KeystoneAuth(wsgi.Middleware):
         action = req.params.get('Action')
 
         try:
-            armvalue = self.armappingdict[action]
+            actiondict = self.armappingdict[action]
+            if actiondict == None:
+                # No mapping available. Pass an empty list.
+                armvalue = []
+            else:
+                # Create a new instance of the action resource mapping dictionary for subsequent 
+                # modifications and pass it as a member of a list
+                armvalue = [dict(actiondict)]
         except KeyError:
             return armvalue
 
