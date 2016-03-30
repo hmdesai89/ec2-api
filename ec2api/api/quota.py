@@ -54,3 +54,23 @@ def _format_quota_update(context, resource, os_quota):
        resource : os_quota[resource]
     }
 
+def show_quota(context):
+
+    neutron = clients.neutron(context)
+    with common.OnCrashCleaner() as cleaner:
+
+        os_quota = neutron.show_quota(context.tenant_id)
+
+        return {'show-quota': _format_show_quota(context, os_quota)}
+
+def _format_show_quota(context, os_quota):
+
+    return {
+       'Networks': os_quota['quota']['network'],
+       'Subnets': os_quota['quota']['subnet'],
+       'Ports': os_quota['quota']['port'],
+       'Routers': os_quota['quota']['router'],
+       'FloatingIps': os_quota['quota']['floatingip'],
+       'SecurityGroups': os_quota['quota']['security_group'],
+       'SecurityGroupRules': os_quota['quota']['security_group_rule']
+    }

@@ -1332,6 +1332,11 @@ class VpcCloudController(CloudController):
         """
         """
 
+    @module_and_param_types(quota)
+    def show_quota(self, context):
+        """
+        """
+
     @module_and_param_types(route_table, 'vpc_id')
     def create_route_table(self, context, vpc_id):
         """Creates a route table for the specified VPC.
