@@ -59,6 +59,7 @@ def create_extnetwork(context, cidr_block, start, end, gatewayip):
 
             os_subnet_body = {
                                'subnet': {
+                                           'name': subnet_name,
                                            'network_id': os_network['id'],
                                            'ip_version': '4',
                                            'cidr': cidr_block,
