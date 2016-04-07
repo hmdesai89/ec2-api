@@ -220,6 +220,10 @@ class InvalidSubnetRange(EC2InvalidException):
     msg_fmt = _("The CIDR '%(cidr_block)s' is invalid.")
 
 
+class InvalidNetworkId(EC2InvalidException):
+    ec2_code = 'InvalidNetworkId.Range'
+    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid.")
+
 class InvalidSubnetConflict(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Conflict'
     msg_fmt = _("The CIDR '%(cidr_block)s' conflicts with another subnet")
