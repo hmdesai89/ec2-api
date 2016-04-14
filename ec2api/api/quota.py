@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 
 Validator = common.Validator
 
-def update_quota(context, resource, quota):
+def update_quota(context, account, resource, quota):
 
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
@@ -44,7 +44,7 @@ def update_quota(context, resource, quota):
                                    }
                         }
 
-        os_quota = neutron.update_quota(context.tenant_id, os_quota_body)['quota']
+        os_quota = neutron.update_quota(account, os_quota_body)['quota']
 
         return {'quota-update': _format_quota_update(context, resource, os_quota)}
 
@@ -54,12 +54,12 @@ def _format_quota_update(context, resource, os_quota):
        resource : os_quota[resource]
     }
 
-def show_quota(context):
+def show_quota(context, account):
 
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
 
-        os_quota = neutron.show_quota(context.tenant_id)
+        os_quota = neutron.show_quota(account)
 
         return {'show-quota': _format_show_quota(context, os_quota)}
 

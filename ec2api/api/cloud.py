@@ -1327,13 +1327,13 @@ class VpcCloudController(CloudController):
         """
         """
 
-    @module_and_param_types(quota, 'str', 'int')
-    def update_quota(self, context, resource, quota):
+    @module_and_param_types(quota, 'str', 'str', 'int')
+    def update_quota(self, context, account, resource, quota):
         """
         """
 
-    @module_and_param_types(quota)
-    def show_quota(self, context):
+    @module_and_param_types(quota, 'str')
+    def show_quota(self, context, account):
         """
         """
 
