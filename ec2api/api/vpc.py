@@ -43,7 +43,7 @@ Validator = common.Validator
 def create_vpc(context, cidr_block, instance_tenancy='default'):
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
     if subnet_ipnet.network != subnet_ipnet.ip:
-        raise exception.InvalidNetworkId(cidr_block=cidr_block)
+        raise exception.InvalidNetworkId(cidr_block=subnet_ipnet.cidr)
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
         #os_router_body = {'router': {'tenant_id':context.tenant_id}}
