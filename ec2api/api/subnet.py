@@ -98,6 +98,11 @@ def create_subnet(context, vpc_id, cidr_block,
     vpc = ec2utils.get_db_item(context, vpc_id)
     vpc_ipnet = netaddr.IPNetwork(vpc['cidr_block'])
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
+    if (subnet_ipnet.ip >= netaddr.IPNetwork("224.0.0.0/8").ip) or (subnet_ipnet.is_loopback()):
+        raise exception.InvalidSubnetRange(cidr_block=cidr_block)
+    if (subnet_ipnet.ip == netaddr.IPNetwork("0.0.0.0/0").ip) or (subnet_ipnet.ip in list(netaddr.IPNetwork("169.254.0.0/16"))):
+        raise exception.ReservedSubnetRange(cidr_block=cidr_block)
+
     if subnet_ipnet.network != subnet_ipnet.ip:
         raise exception.InvalidNetworkId(cidr_block=subnet_ipnet.cidr)
     if subnet_ipnet not in vpc_ipnet:
