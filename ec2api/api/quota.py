@@ -35,6 +35,8 @@ Validator = common.Validator
 
 def update_quota(context, account, resource, quota):
 
+    account = account[4:]
+
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
 
@@ -55,6 +57,8 @@ def _format_quota_update(context, resource, os_quota):
     }
 
 def show_quota(context, account):
+
+    account = account[4:]
 
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
