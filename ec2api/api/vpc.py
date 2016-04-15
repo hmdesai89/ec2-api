@@ -44,7 +44,7 @@ def create_vpc(context, cidr_block, instance_tenancy='default'):
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
     if subnet_ipnet.ip >= netaddr.IPNetwork("224.0.0.0/8").ip or (subnet_ipnet.is_loopback()):
 	raise exception.InvalidSubnetRange(cidr_block=cidr_block)
-    if (subnet_ipnet.ip == netaddr.IPNetwork("0.0.0.0/0").ip) or (subnet_ipnet.ip in list(netaddr.IPNetwork("169.254.0.0/16"))):
+    if (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/8").network == netaddr.IPNetwork("0.0.0.0/0").ip) or (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/16").network == netaddr.IPNetwork("169.254.0.0/16").network):
 	raise exception.ReservedSubnetRange(cidr_block=cidr_block)
     if subnet_ipnet.network != subnet_ipnet.ip:
         raise exception.InvalidNetworkId(cidr_block=subnet_ipnet.cidr)

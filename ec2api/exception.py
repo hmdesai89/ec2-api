@@ -220,7 +220,7 @@ class InvalidSubnetRange(EC2InvalidException):
 
 class ReservedSubnetRange(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Range'
-    msg_fmt = _("The CIDR '%(cidr_block)s' is Reserved, kindly input a valid CIDR such as 10.0.0.0/16")
+    msg_fmt = _("The CIDR '%(cidr_block)s' is reserved, kindly input a valid CIDR such as 10.0.0.0/16")
 
 class InvalidNetworkId(EC2InvalidException):
     ec2_code = 'InvalidNetworkId'
