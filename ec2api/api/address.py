@@ -18,6 +18,7 @@ except ImportError:
     pass  # clients will log absense of neutronclient in this case
 from novaclient import exceptions as nova_exception
 from oslo_config import cfg
+from oslo_log import log as logging
 
 from ec2api.api import clients
 from ec2api.api import common
@@ -28,6 +29,7 @@ from ec2api import exception
 from ec2api.i18n import _
 
 CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
 
 """Address related API implementation
 """
@@ -134,6 +136,7 @@ class AddressDescriber(common.UniversalDescriber):
                 (not os_item.get('port_id') or
                  os_item['fixed_ip_address'] != item['private_ip_address'])):
             _disassociate_address_item(self.context, item)
+            LOG.error(_LE("Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(item), str(os_item))))
         return item
 
     def get_name(self, os_item):
@@ -199,12 +202,14 @@ def _is_address_valid(context, neutron, address):
 
 def _associate_address_item(context, address, network_interface_id,
                             private_ip_address):
+    LOG.debug("Associating address in DB : {} nid: {} pip: {}".format(str(address),str(network_interface_id),str(private_ip_address)))
     address['network_interface_id'] = network_interface_id
     address['private_ip_address'] = private_ip_address
     db_api.update_item(context, address)
 
 
 def _disassociate_address_item(context, address):
+    LOG.debug("Disassociating address in DB : {}".format(str(address)))
     address.pop('network_interface_id')
     address.pop('private_ip_address')
     db_api.update_item(context, address)
