@@ -106,7 +106,7 @@ def neutron(context):
         'auth_url': CONF.keystone_url,
         'service_type': 'network',
         'token': context.auth_token,
-        #'tenant_id': context.tenant,
+        'tenant_id': context.tenant,
         #'endpoint_url': _url_for(context, service_type='network'),
         'endpoint_url': CONF.neutron_endpoint_url,
         'insecure': CONF.ssl_insecure,

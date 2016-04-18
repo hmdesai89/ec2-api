@@ -33,6 +33,7 @@ from ec2api.api import instance
 from ec2api.api import internet_gateway
 from ec2api.api import key_pair
 from ec2api.api import network_interface
+from ec2api.api import quota
 from ec2api.api import route_table
 from ec2api.api import security_group
 from ec2api.api import snapshot
@@ -1323,6 +1324,16 @@ class VpcCloudController(CloudController):
                             'ip', 'ip', 'ip',)
     def create_extnetwork(self, context, cidr_block,
                           start, end, gatewayip):
+        """
+        """
+
+    @module_and_param_types(quota, 'account_id', 'str', 'int')
+    def update_quota(self, context, account, resource, quota):
+        """
+        """
+
+    @module_and_param_types(quota, 'account_id')
+    def show_quota(self, context, account):
         """
         """
 

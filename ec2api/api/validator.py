@@ -23,6 +23,21 @@ from ec2api.i18n import _
 
 LOG = logging.getLogger(__name__)
 
+def validate_account_id(val, parameter_name):
+
+    val = str(val)
+
+    if not val.startswith("acc-"):
+        raise exception.ValidationError(
+            reason=_("%s should start with acc- ") % parameter_name)
+
+    account = val[4:]
+
+    if 32 == len(account):
+         return True
+    raise exception.ValidationError(
+        reason=_("%s should not be less than or greater"
+                 " than 32 characters") % parameter_name)
 
 def validate_str(val, parameter_name, max_length=None):
     if (isinstance(val, basestring) and

@@ -110,6 +110,9 @@ class Validator(object):
     def bool(self, value):
         validator.validate_bool(value, self.param_name)
 
+    def account_id(self, value):
+        validator.validate_account_id(value, self.param_name)
+
     def int(self, value):
         validator.validate_int(value, self.param_name)
 
