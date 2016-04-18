@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import netaddr
 from neutronclient.common import exceptions as neutron_exception
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -41,6 +41,13 @@ Validator = common.Validator
 
 
 def create_vpc(context, cidr_block, instance_tenancy='default'):
+    subnet_ipnet = netaddr.IPNetwork(cidr_block)
+    if subnet_ipnet.ip >= netaddr.IPNetwork("224.0.0.0/8").ip or (subnet_ipnet.is_loopback()):
+	raise exception.InvalidSubnetRange(cidr_block=cidr_block)
+    if (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/8").network == netaddr.IPNetwork("0.0.0.0/0").ip) or (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/16").network == netaddr.IPNetwork("169.254.0.0/16").network):
+	raise exception.ReservedSubnetRange(cidr_block=cidr_block)
+    if subnet_ipnet.network != subnet_ipnet.ip:
+        raise exception.InvalidNetworkId(cidr_block=subnet_ipnet.cidr)
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
         #os_router_body = {'router': {'tenant_id':context.tenant_id}}
