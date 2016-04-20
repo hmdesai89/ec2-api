@@ -216,15 +216,18 @@ class InvalidVpcRange(EC2InvalidException):
 
 class InvalidSubnetRange(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Range'
-    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a valid CIDR such as 10.0.0.0/16")
+    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a valid CIDR such as 10.0.0.0/16. "
+                 "Please refer JCS user guide for more details")
 
 class ReservedSubnetRange(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Range'
-    msg_fmt = _("The CIDR '%(cidr_block)s' is reserved, kindly input a valid CIDR such as 10.0.0.0/16")
+    msg_fmt = _("The CIDR '%(cidr_block)s' is reserved, kindly input a valid CIDR such as 10.0.0.0/16. "
+                "Please refer JCS user guide for more details")
 
 class InvalidNetworkId(EC2InvalidException):
     ec2_code = 'InvalidNetworkId'
-    msg_fmt = _("This CIDR is invalid, kindly input a valid CIDR such as '%(cidr_block)s'.")
+    msg_fmt = _("This CIDR is invalid, kindly input a valid CIDR such as '%(cidr_block)s'. "
+                "Please refer JCS user guide for more details")
 
 class InvalidSubnetConflict(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Conflict'
