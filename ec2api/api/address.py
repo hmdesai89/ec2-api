@@ -38,6 +38,7 @@ LOG = logging.getLogger(__name__)
 Validator = common.Validator
 
 
+
 def get_address_engine():
     if CONF.full_vpc_support:
         return AddressEngineNeutron()
@@ -62,6 +63,20 @@ def allocate_address(context, domain=None):
 def associate_address(context, public_ip=None, instance_id=None,
                       allocation_id=None, network_interface_id=None,
                       private_ip_address=None, allow_reassociation=False):
+
+
+    ### JNT -55
+    ### Calling describe addresses in order to remove any descrepancies
+    ### between ec2-api db and cassandra db as terminateInstances will
+    ### remove eni entry but the same will not be removed from floating
+    ### ip from ec2 db. Describe addresses has auto_update_db which removes
+    ### descrepaencies between dbs
+
+    LOG.error( AddressDescriber(
+        address_engine.get_os_ports(context),
+        db_api.get_items(context, 'i')).describe(
+            context, None, None, None))
+
     if not public_ip and not allocation_id:
         msg = _('Either public IP or allocation id must be specified')
         raise exception.MissingParameter(msg)
@@ -83,6 +98,8 @@ def associate_address(context, public_ip=None, instance_id=None,
 
 
 def disassociate_address(context, public_ip=None, association_id=None):
+
+
     if not public_ip and not association_id:
         msg = _('Either public IP or association id must be specified')
         raise exception.MissingParameter(msg)
@@ -95,6 +112,21 @@ def disassociate_address(context, public_ip=None, association_id=None):
 
 
 def release_address(context, public_ip=None, allocation_id=None):
+
+    ### JNT -55
+    ### Calling describe addresses in order to remove any descrepancies
+    ### between ec2-api db and cassandra db as terminateInstances will
+    ### remove eni entry but the same will not be removed from floating
+    ### ip from ec2 db. Describe addresses has auto_update_db which removes
+    ### descrepaencies between dbs
+
+    AddressDescriber(
+        address_engine.get_os_ports(context),
+        db_api.get_items(context, 'i')).describe(
+            context, None, None, None) 
+
+
+
     if not public_ip and not allocation_id:
         msg = _('Either public IP or allocation id must be specified')
         raise exception.MissingParameter(msg)
@@ -136,7 +168,7 @@ class AddressDescriber(common.UniversalDescriber):
                 (not os_item.get('port_id') or
                  os_item['fixed_ip_address'] != item['private_ip_address'])):
             _disassociate_address_item(self.context, item)
-            LOG.error(_LE("Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(item), str(os_item))))
+            LOG.error("Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(item), str(os_item)))
         return item
 
     def get_name(self, os_item):
