@@ -72,10 +72,10 @@ def associate_address(context, public_ip=None, instance_id=None,
     ### ip from ec2 db. Describe addresses has auto_update_db which removes
     ### descrepaencies between dbs
 
-    LOG.error( AddressDescriber(
+    AddressDescriber(
         address_engine.get_os_ports(context),
         db_api.get_items(context, 'i')).describe(
-            context, None, None, None))
+            context, None, None, None)
 
     if not public_ip and not allocation_id:
         msg = _('Either public IP or allocation id must be specified')
