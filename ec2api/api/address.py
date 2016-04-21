@@ -38,6 +38,23 @@ LOG = logging.getLogger(__name__)
 Validator = common.Validator
 
 
+def validate_db(context,address):
+
+    ### JNT -55
+    ### Calling this function in order to remove any descrepancies
+    ### between ec2-api db and cassandra db as terminateInstances will
+    ### remove eni entry but the same will not be removed from floating
+    ### ip from ec2 db.
+
+    if address.get('network_interface_id') :
+        neutron = clients.neutron(context)
+        os_address =  neutron.show_floatingip(address['os_id'])['floatingip']
+        if (not os_address.get('port_id') or
+             os_address['fixed_ip_address'] != address['private_ip_address']):
+            _disassociate_address_item(context, address)
+            LOG.error("Validate db failed - Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(address), str(os_address)))
+
+
 
 def get_address_engine():
     if CONF.full_vpc_support:
@@ -63,19 +80,6 @@ def allocate_address(context, domain=None):
 def associate_address(context, public_ip=None, instance_id=None,
                       allocation_id=None, network_interface_id=None,
                       private_ip_address=None, allow_reassociation=False):
-
-
-    ### JNT -55
-    ### Calling describe addresses in order to remove any descrepancies
-    ### between ec2-api db and cassandra db as terminateInstances will
-    ### remove eni entry but the same will not be removed from floating
-    ### ip from ec2 db. Describe addresses has auto_update_db which removes
-    ### descrepaencies between dbs
-
-    AddressDescriber(
-        address_engine.get_os_ports(context),
-        db_api.get_items(context, 'i')).describe(
-            context, None, None, None)
 
     if not public_ip and not allocation_id:
         msg = _('Either public IP or allocation id must be specified')
@@ -112,20 +116,6 @@ def disassociate_address(context, public_ip=None, association_id=None):
 
 
 def release_address(context, public_ip=None, allocation_id=None):
-
-    ### JNT -55
-    ### Calling describe addresses in order to remove any descrepancies
-    ### between ec2-api db and cassandra db as terminateInstances will
-    ### remove eni entry but the same will not be removed from floating
-    ### ip from ec2 db. Describe addresses has auto_update_db which removes
-    ### descrepaencies between dbs
-
-    AddressDescriber(
-        address_engine.get_os_ports(context),
-        db_api.get_items(context, 'i')).describe(
-            context, None, None, None) 
-
-
 
     if not public_ip and not allocation_id:
         msg = _('Either public IP or allocation id must be specified')
@@ -288,6 +278,13 @@ class AddressEngineNeutron(object):
         if not _is_address_valid(context, neutron, address):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
+ 
+        ### JNT-55
+        ###This will validate db entry and will change entry accordingly
+        validate_db(context,address)
+
+       
+
         if 'network_interface_id' in address:
             raise exception.InvalidIPAddressInUse(
                 ip_address=address['public_ip'])
@@ -355,6 +352,11 @@ class AddressEngineNeutron(object):
         if not _is_address_valid(context, neutron, address):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
+        
+        ### JNT-55
+        ###This will validate db entry and will change entry accordingly
+        validate_db(context,address)        
+
 
         if address.get('network_interface_id') == network_interface['id']:
             # NOTE(ft): idempotent call
