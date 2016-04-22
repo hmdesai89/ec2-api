@@ -136,7 +136,7 @@ class AddressDescriber(common.UniversalDescriber):
                 (not os_item.get('port_id') or
                  os_item['fixed_ip_address'] != item['private_ip_address'])):
             _disassociate_address_item(self.context, item)
-            LOG.error(_LE("Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(item), str(os_item))))
+            LOG.error("Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(item), str(os_item)))
         return item
 
     def get_name(self, os_item):
