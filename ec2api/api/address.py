@@ -38,13 +38,14 @@ LOG = logging.getLogger(__name__)
 Validator = common.Validator
 
 
-def validate_db(context,address):
 
-    ### JNT -55
-    ### Calling this function in order to remove any descrepancies
+
+    ### This function is called in order to remove any descrepancies
     ### between ec2-api db and cassandra db as terminateInstances will
     ### remove eni entry but the same will not be removed from floating
     ### ip from ec2 db.
+
+def validate_db(context,address):
 
     if address.get('network_interface_id') :
         neutron = clients.neutron(context)
@@ -80,7 +81,6 @@ def allocate_address(context, domain=None):
 def associate_address(context, public_ip=None, instance_id=None,
                       allocation_id=None, network_interface_id=None,
                       private_ip_address=None, allow_reassociation=False):
-
     if not public_ip and not allocation_id:
         msg = _('Either public IP or allocation id must be specified')
         raise exception.MissingParameter(msg)
@@ -102,8 +102,6 @@ def associate_address(context, public_ip=None, instance_id=None,
 
 
 def disassociate_address(context, public_ip=None, association_id=None):
-
-
     if not public_ip and not association_id:
         msg = _('Either public IP or association id must be specified')
         raise exception.MissingParameter(msg)
@@ -116,7 +114,6 @@ def disassociate_address(context, public_ip=None, association_id=None):
 
 
 def release_address(context, public_ip=None, allocation_id=None):
-
     if not public_ip and not allocation_id:
         msg = _('Either public IP or allocation id must be specified')
         raise exception.MissingParameter(msg)
@@ -279,7 +276,6 @@ class AddressEngineNeutron(object):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
  
-        ### JNT-55
         ###This will validate db entry and will change entry accordingly
         validate_db(context,address)
 
@@ -353,7 +349,6 @@ class AddressEngineNeutron(object):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
         
-        ### JNT-55
         ###This will validate db entry and will change entry accordingly
         validate_db(context,address)        
 
