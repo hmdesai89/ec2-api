@@ -38,6 +38,25 @@ LOG = logging.getLogger(__name__)
 Validator = common.Validator
 
 
+
+
+    ### This function is called in order to remove any descrepancies
+    ### between ec2-api db and cassandra db as terminateInstances will
+    ### remove eni entry but the same will not be removed from floating
+    ### ip from ec2 db.
+
+def validate_db(context,address):
+
+    if address.get('network_interface_id') :
+        neutron = clients.neutron(context)
+        os_address =  neutron.show_floatingip(address['os_id'])['floatingip']
+        if (not os_address.get('port_id') or
+             os_address['fixed_ip_address'] != address['private_ip_address']):
+            _disassociate_address_item(context, address)
+            LOG.error("Validate db failed - Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(address), str(os_address)))
+
+
+
 def get_address_engine():
     if CONF.full_vpc_support:
         return AddressEngineNeutron()
@@ -256,6 +275,12 @@ class AddressEngineNeutron(object):
         if not _is_address_valid(context, neutron, address):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
+ 
+        ###This will validate db entry and will change entry accordingly
+        validate_db(context,address)
+
+       
+
         if 'network_interface_id' in address:
             raise exception.InvalidIPAddressInUse(
                 ip_address=address['public_ip'])
@@ -323,6 +348,10 @@ class AddressEngineNeutron(object):
         if not _is_address_valid(context, neutron, address):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
+        
+        ###This will validate db entry and will change entry accordingly
+        validate_db(context,address)        
+
 
         if address.get('network_interface_id') == network_interface['id']:
             # NOTE(ft): idempotent call
