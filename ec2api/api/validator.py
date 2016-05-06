@@ -218,6 +218,7 @@ def validate_security_group_str(value, parameter_name, vpc_id=None):
         allowed = r'^[\x20-\x7E]+$'
     msg = ''
     try:
+        value = str(value)
         val = value.strip()
     except AttributeError:
         msg = (_("Security group %s is not a string or unicode") %
