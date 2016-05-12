@@ -98,15 +98,11 @@ def create_subnet(context, vpc_id, cidr_block,
     vpc = ec2utils.get_db_item(context, vpc_id)
     vpc_ipnet = netaddr.IPNetwork(vpc['cidr_block'])
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
-    if (subnet_ipnet.ip >= netaddr.IPNetwork("224.0.0.0/8").ip) or (subnet_ipnet.is_loopback()):
-        raise exception.InvalidSubnetRange(cidr_block=cidr_block)
-    if (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/8").network == netaddr.IPNetwork("0.0.0.0/0").ip) or (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/16").network == netaddr.IPNetwork("169.254.0.0/16").network):
-        raise exception.ReservedSubnetRange(cidr_block=cidr_block)
+    if subnet_ipnet not in vpc_ipnet:
+        raise exception.InvalidSubnetRange(cidr_block=cidr_block, vpc_ipnet=vpc_ipnet)
 
     if subnet_ipnet.network != subnet_ipnet.ip:
-        raise exception.InvalidNetworkId(cidr_block=subnet_ipnet.cidr)
-    if subnet_ipnet not in vpc_ipnet:
-        raise exception.InvalidSubnetRange(cidr_block=cidr_block)
+        raise exception.InvalidNetworkId(cidr_block=cidr_block, ex_cidr_block=subnet_ipnet.cidr)
 
     gateway_ip = str(netaddr.IPAddress(subnet_ipnet.first + 1))
     main_route_table = db_api.get_item_by_id(context, vpc['route_table_id'])

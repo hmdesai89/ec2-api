@@ -211,27 +211,32 @@ class InvalidParameterCombination(EC2InvalidException):
 
 class InvalidVpcRange(EC2InvalidException):
     ec2_code = 'InvalidVpc.Range'
-    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid.")
+    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid."
+                 "Please refer VPC API Reference guide for more details.")
+class InvalidCidrRange(EC2InvalidException):
+    ec2_code = 'InvalidCidrRange.range'
+    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a valid CIDR such as 172.0.0.0/16. "
+                "Please refer VPC API Reference guide for more details.")
 
 
 class InvalidSubnetRange(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Range'
-    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a valid CIDR such as 10.0.0.0/16. "
-                 "Please refer JCS user guide for more details")
+    msg_fmt = _("Invalid subnet range '%(cidr_block)s', kindly input a valid subnet within the VPC range '%(vpc_ipnet)s'. "
+                 "Please refer VPC API Reference guide for more details.")
 
 class ReservedSubnetRange(EC2InvalidException):
-    ec2_code = 'InvalidSubnet.Range'
-    msg_fmt = _("The CIDR '%(cidr_block)s' is reserved, kindly input a valid CIDR such as 10.0.0.0/16. "
-                "Please refer JCS user guide for more details")
+    ec2_code = 'InvalidCidr.reserved'
+    msg_fmt = _("The CIDR '%(cidr_block)s' is reserved, kindly input a valid CIDR such as 172.0.0.0/16. "
+                "Please refer VPC API Reference guide for more details.")
 
 class InvalidNetworkId(EC2InvalidException):
     ec2_code = 'InvalidNetworkId'
-    msg_fmt = _("This CIDR is invalid, kindly input a valid CIDR such as '%(cidr_block)s'. "
-                "Please refer JCS user guide for more details")
+    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a valid CIDR such as '%(ex_cidr_block)s'. "
+                "Please refer VPC API Reference guide for more details.")
 
 class InvalidSubnetConflict(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Conflict'
-    msg_fmt = _("The CIDR '%(cidr_block)s' conflicts with another subnet")
+    msg_fmt = _("The CIDR '%(cidr_block)s' conflicts with another subnet.")
 
 
 class InvalidInstanceId(EC2InvalidException):
