@@ -32,7 +32,7 @@ def main():
     logging.setup(CONF, 'ec2api')
 
     server = service.WSGIService('ec2api', max_url_len=16384)
-    service.serve(server, workers=server.workers)
+    service.serve(server)
     service.wait()
 
 
