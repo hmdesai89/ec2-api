@@ -99,7 +99,7 @@ def create_subnet(context, vpc_id, cidr_block,
     vpc_ipnet = netaddr.IPNetwork(vpc['cidr_block'])
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
     if subnet_ipnet not in vpc_ipnet:
-        raise exception.InvalidSubnetRange(cidr_block=cidr_block, vpc_ipnet=vpc_ipnet)
+        raise exception.OutOfVpcSubnetRange(cidr_block=cidr_block, vpc_ipnet=vpc_ipnet)
 
     if subnet_ipnet.network != subnet_ipnet.ip:
         raise exception.InvalidNetworkId(cidr_block=cidr_block, ex_cidr_block=subnet_ipnet.cidr)
