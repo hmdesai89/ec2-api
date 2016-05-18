@@ -211,16 +211,22 @@ class InvalidParameterCombination(EC2InvalidException):
 
 class InvalidVpcRange(EC2InvalidException):
     ec2_code = 'InvalidVpc.Range'
-    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid."
-                 "Please refer VPC API Reference Guide for more details.")
+    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a netmask between /16 and /28. "
+                "Please refer VPC API Reference Guide for more details.")
+
+class InvalidSubnetRange(EC2InvalidException):
+    ec2_code = 'InvalidSubnet.Range'
+    msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a netmask between /16 and /28. "
+                "Please refer VPC API Reference Guide for more details.")
+
 class InvalidCidrRange(EC2InvalidException):
     ec2_code = 'InvalidCidrRange.range'
     msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a valid CIDR such as 172.0.0.0/16. "
                 "Please refer VPC API Reference Guide for more details.")
 
 
-class InvalidSubnetRange(EC2InvalidException):
-    ec2_code = 'InvalidSubnet.Range'
+class OutOfVpcSubnetRange(EC2InvalidException):
+    ec2_code = 'OutOfVpcSubnet.Range'
     msg_fmt = _("Invalid subnet range '%(cidr_block)s', kindly input a valid subnet within the VPC range '%(vpc_ipnet)s'. "
                  "Please refer VPC API Reference Guide for more details.")
 
