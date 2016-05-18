@@ -539,8 +539,18 @@ def _get_subnet_host_routes(context, route_table, gateway_ip,
     # Summary of issue: VPC route was causing conflicts in some of the image flavors 
     # causing the failure of default route injection.
     # We use no_vpc_route only in case on cleaner call.
+
+
     if add_vpc_route==False:
+        vpc_id = route_table['vpc_id']
+        vpc = ec2utils.get_db_item(context, vpc_id)
+        vpc_cidr = vpc["cidr_block"]
         host_routes = []
+
+        for route in route_table['routes']:
+            if route['destination_cidr_block'] != vpc_cidr:
+                host_routes.append({'destination': route['destination_cidr_block'],
+                       'nexthop': get_nexthop(route)})
     else:
         host_routes = [{'destination': route['destination_cidr_block'],
                        'nexthop': get_nexthop(route)}
