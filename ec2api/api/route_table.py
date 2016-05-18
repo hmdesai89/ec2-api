@@ -480,18 +480,26 @@ def _update_routes_in_associated_subnets(context, route_table, cleaner,
 
 def _update_subnet_host_routes(context, subnet, route_table, cleaner=None,
                                rollback_route_table_object=None,
-                               router_objects=None, neutron=None):
+                               router_objects=None, neutron=None,
+                               vpc_route_revert=False, add_vpc_route=True):
     neutron = neutron or clients.neutron(context)
     os_subnet = neutron.show_subnet(subnet['os_id'])['subnet']
     gateway_ip = str(netaddr.IPAddress(
         netaddr.IPNetwork(os_subnet['cidr']).first + 1))
-    host_routes = _get_subnet_host_routes(context, route_table, gateway_ip,
-                                          router_objects)
+    if add_vpc_route == False:
+        host_routes = _get_subnet_host_routes(context, route_table, gateway_ip,
+                                              router_objects, False)
+    else:
+        host_routes = _get_subnet_host_routes(context, route_table, gateway_ip,
+                                              router_objects)
     neutron.update_subnet(subnet['os_id'],
                           {'subnet': {'host_routes': host_routes}})
     if cleaner and rollback_route_table_object:
         cleaner.addCleanup(_update_subnet_host_routes, context, subnet,
                            rollback_route_table_object)
+    elif vpc_route_revert == True:
+        cleaner.addCleanup(_update_subnet_host_routes, context, subnet,
+                           route_table, None, None, None, None, False, True)
 
 
 def _get_router_objects(context, route_table):
@@ -505,7 +513,7 @@ def _get_router_objects(context, route_table):
 
 
 def _get_subnet_host_routes(context, route_table, gateway_ip,
-                            router_objects=None):
+                            router_objects=None, add_vpc_route=True):
     def get_nexthop(route):
         if 'gateway_id' in route:
             gateway_id = route['gateway_id']
@@ -525,9 +533,26 @@ def _get_subnet_host_routes(context, route_table, gateway_ip,
             return '127.0.0.1'
         return network_interface['private_ip_address']
 
-    host_routes = [{'destination': route['destination_cidr_block'],
-                    'nexthop': get_nexthop(route)}
-                   for route in route_table['routes']]
+    # As part of JNT-186, we have decided to not send VPC route as part of host routes
+    # that is being sent to the VM because this is already handled as part of default 
+    # route and we have not found a use where this route is needed.
+    # Summary of issue: VPC route was causing conflicts in some of the image flavors 
+    # causing the failure of default route injection.
+
+    if add_vpc_route==False:
+        vpc_id = route_table['vpc_id']
+        vpc = ec2utils.get_db_item(context, vpc_id)
+        vpc_cidr = vpc["cidr_block"]
+        host_routes = []
+
+        for route in route_table['routes']:
+            if route['destination_cidr_block'] != vpc_cidr:
+                host_routes.append({'destination': route['destination_cidr_block'],
+                       'nexthop': get_nexthop(route)})
+    else:
+        host_routes = [{'destination': route['destination_cidr_block'],
+                       'nexthop': get_nexthop(route)}
+                      for route in route_table['routes']]
     if not any(r['destination'] == '0.0.0.0/0' for r in host_routes):
         host_routes.append({'destination': '0.0.0.0/0',
                             'nexthop': '127.0.0.1'})
