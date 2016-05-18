@@ -481,17 +481,17 @@ def _update_routes_in_associated_subnets(context, route_table, cleaner,
 def _update_subnet_host_routes(context, subnet, route_table, cleaner=None,
                                rollback_route_table_object=None,
                                router_objects=None, neutron=None,
-                               vpc_route_revert=False, add_vpc_route=False):
+                               vpc_route_revert=False, add_vpc_route=True):
     neutron = neutron or clients.neutron(context)
     os_subnet = neutron.show_subnet(subnet['os_id'])['subnet']
     gateway_ip = str(netaddr.IPAddress(
         netaddr.IPNetwork(os_subnet['cidr']).first + 1))
     if add_vpc_route == False:
         host_routes = _get_subnet_host_routes(context, route_table, gateway_ip,
-                                              router_objects)
+                                              router_objects, False)
     else:
         host_routes = _get_subnet_host_routes(context, route_table, gateway_ip,
-                                              router_objects, True)
+                                              router_objects)
     neutron.update_subnet(subnet['os_id'],
                           {'subnet': {'host_routes': host_routes}})
     if cleaner and rollback_route_table_object:
@@ -513,7 +513,7 @@ def _get_router_objects(context, route_table):
 
 
 def _get_subnet_host_routes(context, route_table, gateway_ip,
-                            router_objects=None, add_vpc_route=False):
+                            router_objects=None, add_vpc_route=True):
     def get_nexthop(route):
         if 'gateway_id' in route:
             gateway_id = route['gateway_id']
@@ -538,8 +538,6 @@ def _get_subnet_host_routes(context, route_table, gateway_ip,
     # route and we have not found a use where this route is needed.
     # Summary of issue: VPC route was causing conflicts in some of the image flavors 
     # causing the failure of default route injection.
-    # We use no_vpc_route only in case on cleaner call.
-
 
     if add_vpc_route==False:
         vpc_id = route_table['vpc_id']
