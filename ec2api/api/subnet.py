@@ -111,8 +111,19 @@ def create_subnet(context, vpc_id, cidr_block,
 
     gateway_ip = str(netaddr.IPAddress(subnet_ipnet.first + 1))
     main_route_table = db_api.get_item_by_id(context, vpc['route_table_id'])
-    host_routes = route_table_api._get_subnet_host_routes(
-            context, main_route_table, gateway_ip)
+
+    #Get vpc and subnet cidr range
+    subnet_cidr_range = int(cidr_block.split('/')[1])
+    vpc_cidr_range = int(vpc['cidr_block'].split('/')[1])
+
+    # Check if subnet range is same as VPC range. If yes, dont add vpc route
+    if subnet_cidr_range == vpc_cidr_range:
+        host_routes = route_table_api._get_subnet_host_routes(
+                context, main_route_table, gateway_ip)
+    else:
+        host_routes = route_table_api._get_subnet_host_routes(
+                context, main_route_table, gateway_ip, None, True)
+
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
         #os_network_body = {'network': {'tenant_id':context.tenant_id}}
