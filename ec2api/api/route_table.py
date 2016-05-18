@@ -499,7 +499,7 @@ def _update_subnet_host_routes(context, subnet, route_table, cleaner=None,
                            rollback_route_table_object)
     elif vpc_route_revert == True:
         cleaner.addCleanup(_update_subnet_host_routes, context, subnet,
-                           route_table, cleaner, None, None, None, True, True)
+                           route_table, None, None, None, None, False, True)
 
 
 def _get_router_objects(context, route_table):
