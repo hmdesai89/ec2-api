@@ -138,6 +138,16 @@ def validate_vpc_cidr(cidr):
     if not _validate_cidr_block(cidr):
         raise exception.InvalidVpcRange(cidr_block=cidr)
 
+def validate_vpc_cidr_overlap(cidr1, cidr2):
+    net1 = netaddr.IPNetwork(cidr1)
+    net2 = netaddr.IPNetwork(cidr2)
+    if net1.prefixlen <= net2.prefixlen:
+        if net2 in net1:
+            return False
+    else:
+        if net1 in net2:
+            return False
+    return True
 
 def validate_subnet_cidr(cidr):
     if not _validate_cidr_block(cidr):

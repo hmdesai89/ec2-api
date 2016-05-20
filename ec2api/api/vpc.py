@@ -24,6 +24,7 @@ from ec2api.api import internet_gateway as internet_gateway_api
 from ec2api.api import route_table as route_table_api
 from ec2api.api import security_group as security_group_api
 from ec2api.api import subnet as subnet_api
+from ec2api.api import validator
 from ec2api.db import api as db_api
 from ec2api import exception
 from ec2api.i18n import _
@@ -61,6 +62,12 @@ def create_vpc(context, cidr_block, instance_tenancy='default'):
                               {'os_id': os_router['id'],
                                'cidr_block': cidr_block})
         cleaner.addCleanup(db_api.delete_item, context, vpc['id'])
+        #don't allow same CIDR in Multiple VPCs in the same Account
+        vpcs = db_api.get_items(context, 'vpc')
+        for _vpc in vpcs:
+            if _vpc['id'] != vpc['id']:
+                if not validator.validate_vpc_cidr_overlap(cidr_block, _vpc['cidr_block']):
+                    raise exception.OverlappedVpcRange(cidr_block=cidr_block, vpc_id=_vpc['id'])
         route_table = route_table_api._create_route_table(context, vpc)
         cleaner.addCleanup(route_table_api._delete_route_table,
                            context, route_table['id'])

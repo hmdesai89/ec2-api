@@ -214,6 +214,10 @@ class InvalidVpcRange(EC2InvalidException):
     msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a netmask between /16 and /28. "
                 "Please refer VPC API Reference Guide for more details.")
 
+class OverlappedVpcRange(EC2InvalidException):
+    ec2_code = 'OverlappedVpc.Range'
+    msg_fmt = _("The CIDR '%(cidr_block)s' is overlapped with CIDR of vpc '%(vpc_id)s'.")
+
 class InvalidSubnetRange(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Range'
     msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a netmask between /16 and /28. "
