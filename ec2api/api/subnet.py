@@ -99,20 +99,23 @@ def create_subnet(context, vpc_id, cidr_block,
     vpc = ec2utils.get_db_item(context, vpc_id)
     vpc_ipnet = netaddr.IPNetwork(vpc['cidr_block'])
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
-    if (subnet_ipnet.ip >= netaddr.IPNetwork("224.0.0.0/8").ip) or (subnet_ipnet.is_loopback()):
-        raise exception.InvalidSubnetRange(cidr_block=cidr_block)
-    if (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/8").network == netaddr.IPNetwork("0.0.0.0/0").ip) or (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/16").network == netaddr.IPNetwork("169.254.0.0/16").network):
-        raise exception.ReservedSubnetRange(cidr_block=cidr_block)
+    if subnet_ipnet not in vpc_ipnet:
+        raise exception.OutOfVpcSubnetRange(cidr_block=cidr_block, vpc_ipnet=vpc_ipnet)
 
     if subnet_ipnet.network != subnet_ipnet.ip:
-        raise exception.InvalidNetworkId(cidr_block=subnet_ipnet.cidr)
-    if subnet_ipnet not in vpc_ipnet:
-        raise exception.InvalidSubnetRange(cidr_block=cidr_block)
+        raise exception.InvalidNetworkId(cidr_block=cidr_block, ex_cidr_block=subnet_ipnet.cidr)
 
     gateway_ip = str(netaddr.IPAddress(subnet_ipnet.first + 1))
     main_route_table = db_api.get_item_by_id(context, vpc['route_table_id'])
-    host_routes = route_table_api._get_subnet_host_routes(
-            context, main_route_table, gateway_ip)
+
+    # Check if subnet range is same as VPC range. If yes, dont add vpc route
+    if vpc_ipnet.netmask == subnet_ipnet.netmask:
+        host_routes = route_table_api._get_subnet_host_routes(
+                context, main_route_table, gateway_ip, None, False)
+    else:
+        host_routes = route_table_api._get_subnet_host_routes(
+                context, main_route_table, gateway_ip)
+
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
         #os_network_body = {'network': {'tenant_id':context.tenant_id}}
@@ -250,6 +253,20 @@ def _format_subnet(context, subnet, os_subnet, os_network, os_ports):
     ip_count = pow(2, 32 - cidr_range) - 2
     # TODO(Alex): Probably performance-killer. Will have to optimize.
     dhcp_port_accounted = False
+
+    # Get the vpc cidr and the route table object to trigger subnet host route cleanup
+    vpc_id = subnet["vpc_id"]
+    vpc = ec2utils.get_db_item(context, vpc_id)
+    vpc_cidr = vpc["cidr_block"]
+    vpc_cidr_range = int(vpc_cidr.split('/')[1])
+
+    # If subnet range is same as VPC range trigger cleanup
+    if cidr_range == vpc_cidr_range:
+        with common.OnCrashCleaner() as cleaner:
+            main_route_table = db_api.get_item_by_id(context, vpc['route_table_id'])
+            route_table_api._update_subnet_host_routes(context, subnet, main_route_table, cleaner, None, None, None, True, False)
+            LOG.error("Triggering host route cleanup for subnet id - {} within vpc {}".format(subnet['id'], vpc_id))
+
     for port in os_ports:
         for fixed_ip in port.get('fixed_ips', []):
             if fixed_ip['subnet_id'] == os_subnet['id']:

@@ -58,7 +58,9 @@ def get_security_group_engine():
 
 def create_security_group(context, group_name, group_description,
                           vpc_id=None):
-    nova = clients.nova(context)
+    group_name = str(group_name)
+    group_description = str(group_description)
+    nova  = clients.nova(context)
     if vpc_id and group_name != vpc_id:
         security_groups = describe_security_groups(
             context,
