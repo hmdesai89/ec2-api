@@ -137,6 +137,9 @@ class EC2DuplicateException(EC2InvalidException):
     pass
 
 
+class EC2ReservedException(EC2InvalidException):
+    pass
+
 class EC2InUseException(EC2InvalidException):
     pass
 
@@ -304,6 +307,10 @@ class InvalidGroupDuplicate(EC2DuplicateException):
     ec2_code = 'InvalidGroup.Duplicate'
     msg_fmt = _("Security group '%(name)s' already exists.")
 
+
+class InvalidGroupReserved(EC2ReservedException):
+    ec2_code = 'InvalidGroup.Duplicate'
+    msg_fmt = _("Security group '%(name)s' reserved.")
 
 class RouteAlreadyExists(EC2DuplicateException):
     msg_fmt = _('The route identified by %(destination_cidr_block)s '
