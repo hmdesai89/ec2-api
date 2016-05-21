@@ -24,6 +24,7 @@ from ec2api.api import internet_gateway as internet_gateway_api
 from ec2api.api import route_table as route_table_api
 from ec2api.api import security_group as security_group_api
 from ec2api.api import subnet as subnet_api
+from ec2api.api import validator
 from ec2api.db import api as db_api
 from ec2api import exception
 from ec2api.i18n import _
@@ -43,11 +44,11 @@ Validator = common.Validator
 def create_vpc(context, cidr_block, instance_tenancy='default'):
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
     if subnet_ipnet.ip >= netaddr.IPNetwork("224.0.0.0/8").ip or (subnet_ipnet.is_loopback()):
-	raise exception.InvalidSubnetRange(cidr_block=cidr_block)
+	raise exception.InvalidCidrRange(cidr_block=cidr_block)
     if (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/8").network == netaddr.IPNetwork("0.0.0.0/0").ip) or (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/16").network == netaddr.IPNetwork("169.254.0.0/16").network):
 	raise exception.ReservedSubnetRange(cidr_block=cidr_block)
     if subnet_ipnet.network != subnet_ipnet.ip:
-        raise exception.InvalidNetworkId(cidr_block=subnet_ipnet.cidr)
+        raise exception.InvalidNetworkId(cidr_block=cidr_block, ex_cidr_block=subnet_ipnet.cidr)
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
         #os_router_body = {'router': {'tenant_id':context.tenant_id}}
@@ -61,6 +62,12 @@ def create_vpc(context, cidr_block, instance_tenancy='default'):
                               {'os_id': os_router['id'],
                                'cidr_block': cidr_block})
         cleaner.addCleanup(db_api.delete_item, context, vpc['id'])
+        #don't allow same CIDR in Multiple VPCs in the same Account
+        vpcs = db_api.get_items(context, 'vpc')
+        for _vpc in vpcs:
+            if _vpc['id'] != vpc['id']:
+                if not validator.validate_vpc_cidr_overlap(cidr_block, _vpc['cidr_block']):
+                    raise exception.OverlappedVpcRange(cidr_block=cidr_block, vpc_id=_vpc['id'])
         route_table = route_table_api._create_route_table(context, vpc)
         cleaner.addCleanup(route_table_api._delete_route_table,
                            context, route_table['id'])

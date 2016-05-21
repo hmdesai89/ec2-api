@@ -117,10 +117,12 @@ class CloudController(object):
 
     @module_and_param_types(address, 'ip', 'i_id',
                             'eipalloc_id', 'eni_id',
-                            'ip', 'bool')
+                            'ip')
+        #                    'ip', 'bool')
     def associate_address(self, context, public_ip=None, instance_id=None,
                           allocation_id=None, network_interface_id=None,
-                          private_ip_address=None, allow_reassociation=False):
+                          private_ip_address=None):
+        #                  private_ip_address=None, allow_reassociation=False):
         """Associates an Elastic IP with an instance or a network interface.
 
         Args:
