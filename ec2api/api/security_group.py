@@ -57,6 +57,8 @@ def get_security_group_engine():
 
 
 def create_security_group(context, group_name, group_description, vpc_id=None):
+    group_name = str(group_name)
+    group_description = str(group_description)
     nova = clients.nova(context)
 # added check for mandatory parameters
     if group_name is None or group_description is None:
