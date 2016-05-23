@@ -216,7 +216,7 @@ class InvalidVpcRange(EC2InvalidException):
 
 class OverlappedVpcRange(EC2InvalidException):
     ec2_code = 'OverlappedVpc.Range'
-    msg_fmt = _("This CIDR '%(new_cidr_block)s' overlaps with the existing CIDR '%(cidr_block)s' having vpc-id '%(vpc_id)s'.")
+    msg_fmt = _("This CIDR '%(new_cidr_block)s' overlaps with the existing CIDR '%(cidr_block)s' having vpc-id '%(vpc_id)s'.Please enter a non-overlapping CIDR.")
 
 class InvalidSubnetRange(EC2InvalidException):
     ec2_code = 'InvalidSubnet.Range'
