@@ -67,7 +67,7 @@ def create_vpc(context, cidr_block, instance_tenancy='default'):
         for _vpc in vpcs:
             if _vpc['id'] != vpc['id']:
                 if not validator.validate_vpc_cidr_overlap(cidr_block, _vpc['cidr_block']):
-                    raise exception.OverlappedVpcRange(cidr_block=cidr_block, vpc_id=_vpc['id'])
+                    raise exception.OverlappedVpcRange(new_cidr_block=cidr_block, cidr_block=_vpc['cidr_block'], vpc_id=_vpc['id'])
         route_table = route_table_api._create_route_table(context, vpc)
         cleaner.addCleanup(route_table_api._delete_route_table,
                            context, route_table['id'])
