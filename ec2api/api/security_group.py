@@ -163,8 +163,8 @@ class SecurityGroupDescriber(common.TaggableItemsDescriber):
                 db_group = db_groups_dict.get(os_group)
                 if db_group and db_group == vpc['id']:
                     continue
-            had_to_repair = True
-            _create_default_security_group(self.context, vpc)
+            #had_to_repair = True  #JNT226 loop in describecall
+            #_create_default_security_group(self.context, vpc)
         return had_to_repair
 
 
