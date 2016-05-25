@@ -56,26 +56,28 @@ def get_security_group_engine():
         return SecurityGroupEngineNova()
 
 
-def create_security_group(context, group_name, group_description,
-                          vpc_id=None):
+def create_security_group(context, group_name, group_description, vpc_id=None):
     group_name = str(group_name)
     group_description = str(group_description)
-    nova  = clients.nova(context)
-    if vpc_id and group_name != vpc_id:
-        security_groups = describe_security_groups(
-            context,
-            filter=[{'name': 'vpc-id',
-                     'value': [vpc_id]},
-                    {'name': 'group-name',
-                     'value': [group_name]}])['securityGroupInfo']
+    nova = clients.nova(context)
+# added check for mandatory parameters
+    if group_name is None or group_description is None:
+        raise exception.MissingParameter(param='group name  or group description')
+#  removed check if group_name!= vpc_id as it allowing creation of multiple default sg
+    if vpc_id:
+        if vpc_id == group_name:
+            security_groups = describe_security_groups( context, filter=[{'name': 'vpc-id', 'value': [vpc_id]}, {'name': 'group-name', 'value': ["default"]}])['securityGroupInfo']
+        else: 
+           security_groups = describe_security_groups( context, filter=[{'name': 'vpc-id', 'value': [vpc_id]}, {'name': 'group-name', 'value': [group_name]}])['securityGroupInfo'] 
+        if group_name == vpc_id and len(security_groups)>0:
+            raise exception.InvalidGroupReserved(name=group_name)
         if security_groups:
             raise exception.InvalidGroupDuplicate(name=group_name)
     with common.OnCrashCleaner() as cleaner:
         try:
             # TODO(Alex): Shouldn't allow creation of groups with existing
             # name if in the same VPC or in EC2-Classic.
-            os_security_group = nova.security_groups.create(group_name,
-                                                            group_description)
+            os_security_group = nova.security_groups.create(group_name,group_description)
         except nova_exception.OverLimit:
             raise exception.ResourceLimitExceeded(resource='security groups')
         cleaner.addCleanup(nova.security_groups.delete,
@@ -433,6 +435,12 @@ class SecurityGroupEngineNeutron(object):
                                                           group_name,
                                                           group_id)
         security_group = ec2utils.get_db_item(context, group_id)
+        vpc_id = security_group['vpc_id']
+        security_groups = describe_security_groups(context,filter=[{'name': 'vpc-id','value': [vpc_id]},{'name': 'group-id','value': [group_id]}])['securityGroupInfo'] 
+        if security_groups[0]['groupName'] == 'default' and vpc_id != None :
+            security_groups = describe_security_groups(context,filter=[{'name': 'vpc-id','value': [vpc_id]},{'name': 'group-name','value': ["default"]}])['securityGroupInfo']  
+            if len(security_groups) > 1: 
+                delete_default=True
         try:
             if not delete_default:
                 os_security_group = neutron.show_security_group(
