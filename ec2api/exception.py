@@ -281,6 +281,9 @@ class CannotDelete(EC2IncorrectStateException):
 class ResourceAlreadyAssociated(EC2IncorrectStateException):
     ec2_code = 'Resource.AlreadyAssociated'
 
+class AllreadyRjilIPAssociated(EC2IncorrectStateException):
+    ec2_code = 'AlreadyAssociated.RjilIp'
+    msg_fmt = _("This resource already has an associated RJIL Routable IP  '%(public_ip)s' having allocation-id '%(allocation_id)s'.")
 
 class GatewayNotAttached(EC2IncorrectStateException):
     ec2_code = 'Gateway.NotAttached'
