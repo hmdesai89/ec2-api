@@ -282,7 +282,7 @@ class ResourceAlreadyAssociated(EC2IncorrectStateException):
     ec2_code = 'Resource.AlreadyAssociated'
 
 class AlreadyRjilIPAssociated(EC2IncorrectStateException):
-    ec2_code = 'AlreadyAssociated.RjilIp'
+    ec2_code = 'AlreadyAssociated.RJILIP'
     msg_fmt = _("Only one RJIL Routable IP can be associated with an instance. This instance already has an associated RJIL Routable IP '%(public_ip)s' having allocation-id '%(allocation_id)s'.")
 
 class GatewayNotAttached(EC2IncorrectStateException):
