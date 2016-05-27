@@ -310,10 +310,10 @@ class AddressEngineNeutron(object):
                     # RJIL IP for an instances
                     eni_id= eni['id']  #store network interface id
                     for epi in db_api.get_items(context, 'eipalloc'):
-                       #If network interface Id will be present in eipalloc data then it will throw the exception
-                       if 'network_interface_id' in  epi:
-                        if eni_id == epi['network_interface_id']:
-                          raise exception.AllreadyRjilIPAssociated(public_ip=epi['public_ip'], allocation_id=epi['id'])
+                        #If network interface Id will be present in eipalloc data then it will throw the exception
+                        if 'network_interface_id' in  epi:
+                            if eni_id == epi['network_interface_id']:
+                                raise exception.AlreadyRjilIPAssociated(public_ip=epi['public_ip'], allocation_id=epi['id'])
 
         neutron = clients.neutron(context)
         if public_ip:
