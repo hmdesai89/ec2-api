@@ -163,7 +163,7 @@ class SecurityGroupDescriber(common.TaggableItemsDescriber):
                 db_group = db_groups_dict.get(os_group)
                 if db_group and db_group == vpc['id']:
                     continue
-            #had_to_repair = True  #JNT226 loop in describecall
+            #had_to_repair = True   #JNT226 loop in describecall
             #_create_default_security_group(self.context, vpc)
         return had_to_repair
 
@@ -196,13 +196,15 @@ def _authorize_security_group(context, group_id, group_name,
     rules_bodies = _build_rules(context, group_id, group_name,
                                 ip_permissions, direction)
     for rule_body in rules_bodies:
+        if rule_body['protocol'] == "any":
+            rule_body['protocol'] = None
         security_group_engine.authorize_security_group(context, rule_body)
     return True
 
 
 def _validate_parameters(protocol, from_port, to_port):
     if (not isinstance(protocol, int) and
-            protocol not in ['tcp', 'udp', 'icmp']):
+            protocol not in ['tcp', 'udp', 'icmp', 'any']):
         raise exception.InvalidParameterValue(
             _('Invalid value for IP protocol. Unknown protocol.'))
     if (not isinstance(from_port, int) or
@@ -229,6 +231,17 @@ def _validate_parameters(protocol, from_port, to_port):
         if (to_port < -1 or to_port > 255) and (to_port != 65535):
             raise exception.InvalidParameterValue(
                 _('ICMP code is out of range.'))
+    elif protocol in ['any']:
+        if from_port > to_port:
+            raise exception.InvalidParameterValue(
+                _('Invalid port range.'))
+        if from_port < -1 or from_port > 65535:
+            raise exception.InvalidParameterValue(
+                _('TCP/UDP from port is out of range.'))
+        if to_port <-1  or to_port > 65535:
+            raise exception.InvalidParameterValue(
+                _('TCP/UDP to port is out of range.'))
+ 
 
 
 def _build_rules(context, group_id, group_name, ip_permissions, direction):
@@ -239,6 +252,7 @@ def _build_rules(context, group_id, group_name, ip_permissions, direction):
     os_security_group_id = security_group_engine.get_group_os_id(context,
                                                                  group_id,
                                                                  group_name)
+    
     os_security_group_rule_bodies = []
     if ip_permissions is None:
         ip_permissions = []
@@ -247,7 +261,7 @@ def _build_rules(context, group_id, group_name, ip_permissions, direction):
             {'security_group_id': os_security_group_id,
              'direction': direction,
              'ethertype': 'IPv4'})
-        protocol = rule.get('ip_protocol', -1)
+        protocol = rule.get('ip_protocol', 'any')
         from_port = rule.get('from_port', -1)
         to_port = rule.get('to_port', -1)
         _validate_parameters(protocol, from_port, to_port)
