@@ -352,7 +352,7 @@ def _translate_group_name(context, os_group, db_groups):
     # in all of the subsequent handling (filtering, using in parameters...)
     if (os_group['name'].startswith('vpc-') and db_groups and
             next((g for g in db_groups
-                  if g['os_id'] == os_group['id']), None)):
+                  if g['os_id'] == os_group['id'] and g['vpc_id'] == os_group['name']), None)):
         return 'default'
     return os_group['name']
 
