@@ -324,7 +324,7 @@ def _revoke_security_group(context, group_id, group_name, ip_permissions,
                 os_rules_to_delete.append(os_rule['id'])
 
     if not os_rules_to_delete:
-        raise exception.InvalidPermissionNotFound()
+        raise exception.InvalidPermissionNotFound(sg_id=group_id)
     for os_rule_id in os_rules_to_delete:
         security_group_engine.delete_os_group_rule(context, os_rule_id)
     return True
