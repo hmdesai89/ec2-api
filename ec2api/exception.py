@@ -187,8 +187,7 @@ class AuthFailure(EC2InvalidException):
 
 
 class ValidationError(EC2InvalidException):
-    msg_fmt = _("The input fails to satisfy the constraints "
-                "specified by an AWS service: '%(reason)s'")
+    msg_fmt = _("%(reason)s")
 
 
 class MissingParameter(EC2InvalidException):
@@ -262,7 +261,7 @@ class InvalidInstanceId(EC2InvalidException):
 class InvalidSnapshotIDMalformed(EC2InvalidException):
     ec2_code = 'InvalidSnapshotID.Malformed'
     # TODO(ft): Change the message with the real AWS message
-    msg_fmg = _('The snapshot %(id)s ID is not valid')
+    msg_fmt = _('The snapshot %(id)s ID is not valid')
 
 
 class IncorrectState(EC2IncorrectStateException):
@@ -281,6 +280,9 @@ class CannotDelete(EC2IncorrectStateException):
 class ResourceAlreadyAssociated(EC2IncorrectStateException):
     ec2_code = 'Resource.AlreadyAssociated'
 
+class AlreadyRjilIPAssociated(EC2IncorrectStateException):
+    ec2_code = 'AlreadyAssociated.RJILIP'
+    msg_fmt = _("Only one RJIL Routable IP can be associated with an instance. This instance already has an associated RJIL Routable IP '%(public_ip)s' having allocation-id '%(allocation_id)s'.")
 
 class GatewayNotAttached(EC2IncorrectStateException):
     ec2_code = 'Gateway.NotAttached'
@@ -391,12 +393,12 @@ class InvalidSecurityGroupIDNotFound(EC2NotFoundException):
 
 class InvalidGroupNotFound(EC2NotFoundException):
     ec2_code = 'InvalidGroup.NotFound'
-    msg_fmg = _("The security group ID '%(id)s' does not exist")
+    msg_fmt = _("The security group ID '%(id)s' does not exist, kindly enter a valid security group ID.")
 
 
 class InvalidPermissionNotFound(EC2NotFoundException):
     ec2_code = 'InvalidPermission.NotFound'
-    msg_fmg = _('The specified permission does not exist')
+    msg_fmt = _("This rule does not exist in the security group '%(sg_id)s'")
 
 
 class InvalidRouteTableIDNotFound(EC2NotFoundException):
