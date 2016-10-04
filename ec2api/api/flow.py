@@ -9,7 +9,7 @@ from ec2api.api import ec2utils
 from ec2api import exception
 from ec2api.i18n import _
 import urllib2
-import json
+import ijson
 import base64
 
 Validator = common.Validator
@@ -25,7 +25,30 @@ accounts = [
 CONF = cfg.CONF
 CONF.register_group(admin_group)
 CONF.register_opts(accounts, admin_group)
+def create_dict(f):
+    parser=ijson.parse(f)
+    key=''
+    key2=''
+    for prefix, event, value in parser:
 
+            if (prefix,event) == ('','start_map'):
+                dict1=dict()
+            elif (prefix,event) == ('','map_key'):
+                key=value
+            elif (prefix,event) == (key,'start_array'):
+                dict1[key]=[]
+            elif (prefix,event) == ((key+'.item'),'start_map'):
+                dict2=dict()
+            elif (prefix,event) == (str(key)+'.item','map_key'):
+                key2=value
+            elif (prefix,event) == (str(key)+'.item.'+str(key2),'number'):
+                dict2[key2]=value
+            elif (prefix,event) == (str(key)+'.item.'+str(key2),'string'):
+                dict2[key2]=value
+            elif (prefix,event) == (str(key)+'.item','end_map'):
+                dict1[key].append(dict2)
+                del dict2
+    return dict1
 
 #validate admin password
 def validate_admin_account(account_id,password):
@@ -61,5 +84,5 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
         f = urllib2.urlopen(req,timeout=1800)
     except urllib2.HTTPError as err:
         raise exception.ConnectionError(reason=err)
-    return json.load(f)
+    return create_dict(f)
  
