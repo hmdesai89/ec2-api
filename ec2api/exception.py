@@ -186,7 +186,15 @@ class AuthFailure(EC2InvalidException):
     msg_fmt = _('Not authorized.')
 
 
+class AuthFailureError(EC2InvalidException):
+    msg_fmt = _("%(reason)s")
+
+
 class ValidationError(EC2InvalidException):
+    msg_fmt = _("%(reason)s")
+
+
+class TimeRangeError(EC2InvalidException):
     msg_fmt = _("%(reason)s")
 
 
