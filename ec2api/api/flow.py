@@ -41,7 +41,6 @@ def isInrange(start_time,end_time):
 
 def convert_to_now(time):
     current_time= datetime.now()
-    print "*******", time
     t_time= datetime.strptime(time, '%d-%m-%Y %H:%M:%S')
     local = pytz.timezone ("Asia/Kolkata")
     local_dt = local.localize(t_time, is_dst=None)
@@ -57,7 +56,7 @@ def validate_admin_account(account_id,password,m_id,m_pass):
     if (m_id == account_id) and (base64.b64decode(m_pass) == password):
         return True;
     elif CONF.admin_account.account_id != account_id:
-        raise exception.AuthFailure("Authorization failed, Not authorise")
+        raise exception.AuthFailureError("Authorization failed, Not authorise")
     else:
         return False;
 
@@ -75,7 +74,7 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
 	raise exception.PasswordMissing(reason='admin password must be required')
     if admin_password:
         if not validate_admin_account(context.project_id,admin_password,account_id_match,admin_password_match):
-	    raise exception.AuthFailure(reason='Authorization failed, password incorrect. Please enter a valid admin password')
+	    raise exception.AuthFailureError(reason='Authorization failed, password incorrect. Please enter a valid admin password')
 	#if only account id non for admin show flow log for all account
         if admin_password and account_id is None:
             data = field + '"end_time": "%s" , "start_time": "%s"}' % (end_time, start_time)
