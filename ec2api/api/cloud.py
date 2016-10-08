@@ -1804,7 +1804,7 @@ class VpcCloudController(CloudController):
             true if the request succeeds.
         """
 
-    @module_and_param_types(flow,'str','str',
+    @module_and_param_types(flow,'time_string','time_string',
                             'account_id','str')
     def describe_flow_log(self, context,start_time,end_time,
                                     accountid=None,

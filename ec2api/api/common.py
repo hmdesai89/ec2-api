@@ -113,6 +113,9 @@ class Validator(object):
     def account_id(self, value):
         validator.validate_account_id(value, self.param_name)
 
+    def time_string(self, value):
+        validator.validate_time_string(value, self.param_name)
+
     def int(self, value):
         validator.validate_int(value, self.param_name)
 

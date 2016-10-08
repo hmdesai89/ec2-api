@@ -23,7 +23,9 @@ accounts = [
             cfg.StrOpt('password',
                                 help=('password for admin account Id')),
             cfg.StrOpt('query_url',
-                                help=('url of analytics query service'))
+                                help=('url of analytics query service')),
+            cfg.IntOpt('day_limit',
+                                help=('start_time and end_time should be limit'))
 ]
 
 CONF = cfg.CONF
@@ -39,7 +41,7 @@ def isInrange(start_time,end_time):
     else:
         return False
 
-def convert_to_now(time):
+def convert_to_now(time,day_limit):
     current_time= datetime.now()
     t_time= datetime.strptime(time, '%d-%m-%Y %H:%M:%S')
     local = pytz.timezone ("Asia/Kolkata")
@@ -47,6 +49,8 @@ def convert_to_now(time):
     utc_dt = local_dt.astimezone (pytz.utc)
     utcdt = utc_dt.replace(tzinfo=None)
     delta=int( (current_time - utcdt).total_seconds())
+    if delta >= day_limit:
+        raise exception.TimeRangeError(reason="Invalid input time only past 15days time will be valid")
     now_time= 'now-%ss' % (delta)
     return now_time
 
@@ -64,14 +68,15 @@ def validate_admin_account(account_id,password,m_id,m_pass):
 def describe_flow_log(context,start_time,end_time,account_id=None,admin_password=None):
     CONF(default_config_files=['/etc/ec2api/ec2api.conf'])
     url = CONF.admin_account.query_url
+    day_limit = CONF.admin_account.day_limit
     if not isInrange(start_time,end_time):
         raise exception.TimeRangeError(reason='Difference between start and end time must be less than 1 hour')
-    start_time= convert_to_now(start_time)
-    end_time= convert_to_now(end_time)
+    start_time= convert_to_now(start_time,day_limit)
+    end_time= convert_to_now(end_time,day_limit)
     account_id_match = CONF.admin_account.account_id
     admin_password_match = CONF.admin_account.password
     if admin_password is None and account_id:
-	raise exception.PasswordMissing(reason='admin password must be required')
+	raise exception.AuthFailureError(reason='Authorization failed, password missing. Please enter a valid admin password')
     if admin_password:
         if not validate_admin_account(context.project_id,admin_password,account_id_match,admin_password_match):
 	    raise exception.AuthFailureError(reason='Authorization failed, password incorrect. Please enter a valid admin password')
