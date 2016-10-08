@@ -157,7 +157,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'CreateExtnetwork' : '',
                           'UpdateQuota' : '',
                           'ShowQuota' : '',
-			  'DescribeFlowLog' : ''
+                          'DescribeFlowLog' : ''
                         }
 
     armappingdict = {

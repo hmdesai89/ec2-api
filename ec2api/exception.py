@@ -182,15 +182,15 @@ class InvalidInput(EC2InvalidException):
     msg_fmt = _("Invalid input received: %(reason)s")
 
 
+class ValidationError(EC2InvalidException):
+    msg_fmt = _("%(reason)s")
+
+
 class AuthFailure(EC2InvalidException):
     msg_fmt = _('Not authorized.')
 
 
 class AuthFailureError(EC2InvalidException):
-    msg_fmt = _("%(reason)s")
-
-
-class ValidationError(EC2InvalidException):
     msg_fmt = _("%(reason)s")
 
 
