@@ -12,7 +12,13 @@ import json
 import base64
 import ast
 
-field = '{"end_time": "%s" , "select_fields": ["vrouter", "sourcevn", "sourceip", "destvn", "destip", "protocol", "sport", "dport",  "direction_ing", "setup_time", "teardown_time","agg-packets", "agg-bytes", "action", "sg_rule_uuid", "nw_ace_uuid",  "underlay_proto","underlay_source_port","UuidKey"], "start_time": "%s" , "table": "FlowRecordTable",'
+field = ('{"end_time": "%s" , "select_fields": ['
+           '"sourcevn", "sourceip", "destvn", "destip", "protocol", '
+           '"sport", "dport",  "direction_ing", "setup_time", '
+           '"teardown_time","agg-packets", "agg-bytes", "action", '
+           '"sg_rule_uuid", "nw_ace_uuid",  "underlay_proto", '
+           '"underlay_source_port","UuidKey"], "start_time": "%s" '
+           ', "table": "FlowRecordTable",')
 
 Validator = common.Validator
 admin_group = cfg.OptGroup(name='admin_account',
@@ -25,7 +31,7 @@ accounts = [
             cfg.StrOpt('query_url',
                                 help=('url of analytics query service')),
             cfg.IntOpt('day_limit',
-                                help=('start_time and end_time should be limit'))
+                                help=('start_time and end_time period limit'))
 ]
 
 CONF = cfg.CONF
@@ -50,7 +56,8 @@ def convert_to_now(time,day_limit):
     utcdt = utc_dt.replace(tzinfo=None)
     delta=int( (current_time - utcdt).total_seconds())
     if delta >= day_limit:
-        raise exception.TimeRangeError(reason="Invalid input time only past 15days time will be valid")
+        raise exception.TimeRangeError(reason="Invalid input. Time period between Current time and start_time or "
+                                              "end_time should not be greater than 15days")
     now_time= 'now-%ss' % (delta)
     return now_time
 
@@ -70,24 +77,31 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
     url = CONF.admin_account.query_url
     day_limit = CONF.admin_account.day_limit
     if not isInrange(start_time,end_time):
-        raise exception.TimeRangeError(reason='Difference between start and end time must be less than 1 hour')
+        raise exception.TimeRangeError(reason='Difference between start and end time '
+                                              'must be less than 1 hour')
     start_time= convert_to_now(start_time,day_limit)
     end_time= convert_to_now(end_time,day_limit)
     account_id_match = CONF.admin_account.account_id
     admin_password_match = CONF.admin_account.password
     if admin_password is None and account_id:
-	raise exception.AuthFailureError(reason='Authorization failed, password missing. Please enter a valid admin password')
+	raise exception.AuthFailureError(reason='Authorization failed, password missing. '
+                                                'Please enter a valid admin password')
     if admin_password:
         if not validate_admin_account(context.project_id,admin_password,account_id_match,admin_password_match):
-	    raise exception.AuthFailureError(reason='Authorization failed, password incorrect. Please enter a valid admin password')
+	    raise exception.AuthFailureError(reason='Authorization failed, password incorrect.'
+                                                    ' Please enter a valid admin password')
 	#if only account id non for admin show flow log for all account
         if admin_password and account_id is None:
             data = field + '"end_time": "%s" , "start_time": "%s"}' % (end_time, start_time)
         if admin_password and account_id:
             account_id= account_id.split('-')[1]
-            data = field + '"end_time": "%s" , "start_time": "%s", "where": [[{"name": "sourcevn", "value": "default-domain:Customer-%s:default-virtual-network", "op": 1}]] }' % (end_time, start_time,account_id)
+            data = field + ('"end_time": "%s" , "start_time": "%s", "where": [[{"name": '
+                           '"sourcevn", "value": "default-domain:Customer-%s:default-virtual-network", '
+                           '"op": 1}]] }') % (end_time, start_time,account_id)
     else  :
-        data = field + '"end_time": "%s" , "start_time": "%s", "where": [[{"name": "sourcevn", "value": "default-domain:Customer-%s:default-virtual-network", "op": 1}]] }' % (end_time, start_time,context.project_id)
+        data = field + ('"end_time": "%s" , "start_time": "%s", "where": [[{"name": "sourcevn", '
+                        '"value": "default-domain:Customer-%s:default-virtual-network", '
+                        '"op": 1}]] }') % (end_time, start_time,context.project_id)
     req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
     try:
         f = urllib2.urlopen(req,timeout=600)

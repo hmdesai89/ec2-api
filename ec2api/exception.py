@@ -198,6 +198,10 @@ class InvalidTimeString(EC2InvalidException):
     msg_fmt = _("%(reason)s")
 
 
+class ConnectionError(EC2InvalidException):
+    msg_fmt = _("%(reason)s")
+
+
 class AuthFailure(EC2InvalidException):
     msg_fmt = _('Not authorized.')
 
