@@ -56,8 +56,9 @@ def convert_to_now(time,day_limit):
     utcdt = utc_dt.replace(tzinfo=None)
     delta=int( (current_time - utcdt).total_seconds())
     if delta >= day_limit:
-        raise exception.TimeRangeError(reason="Invalid input. Time period between Current time and start_time or "
-                                              "end_time should not be greater than 15days")
+        num_days_limit = day_limit/(60*60*24)
+        raise exception.TimeRangeError(reason=("Invalid input. Time period between Current time and start_time or "
+                                              "end_time should not be greater than %sdays") % num_days_limit)
     now_time= 'now-%ss' % (delta)
     return now_time
 
