@@ -41,6 +41,7 @@ from ec2api.api import subnet
 from ec2api.api import tag
 from ec2api.api import volume
 from ec2api.api import vpc
+from ec2api.api import flow
 from ec2api import exception
 
 CONF = cfg.CONF
@@ -1802,3 +1803,13 @@ class VpcCloudController(CloudController):
         Returns:
             true if the request succeeds.
         """
+
+    @module_and_param_types(flow,'time_string','time_string',
+                            'account_id','str')
+    def describe_flow_log(self, context,start_time,end_time,
+                                    accountid=None,
+                                    admin_password=None):
+       """  
+
+       """
+

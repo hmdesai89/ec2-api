@@ -156,7 +156,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DescribeAddresses' : '',
                           'CreateExtnetwork' : '',
                           'UpdateQuota' : '',
-                          'ShowQuota' : ''
+                          'ShowQuota' : '',
+                          'DescribeFlowLog' : ''
                         }
 
     armappingdict = {
@@ -286,7 +287,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                        },
                           'CreateExtnetwork': None,
                           'UpdateQuota': None,
-                          'ShowQuota' : None
+                          'ShowQuota' : None,
+                          'DescribeFlowLog' : None
                     }
 
     def _get_signature(self, req):
