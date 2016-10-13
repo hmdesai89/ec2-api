@@ -97,7 +97,7 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
             name = 'sourcevn'
         else:
             raise exception.ValidationError(reason="direction_ing value is invalid. Please enter "
-                                                   "dierection_ing 0 for egress traffic and 1 for ingress traffic")
+                                                   "direction_ing 0 for egress traffic and 1 for ingress traffic")
     if admin_password is None and account_id:
 	raise exception.AuthFailureError(reason='Authorization failed, password missing. '
                                                 'Please enter a valid admin password')
