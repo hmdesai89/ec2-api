@@ -12,13 +12,13 @@ import json
 import base64
 import ast
 
-field = ('{"end_time": "%s" , "select_fields": ['
+field = ('{"limit": 100000, "select_fields": ['
            '"sourcevn", "sourceip", "destvn", "destip", "protocol", '
            '"sport", "dport",  "direction_ing", "setup_time", '
            '"teardown_time","agg-packets", "agg-bytes", "action", '
            '"sg_rule_uuid", "nw_ace_uuid",  "underlay_proto", '
-           '"underlay_source_port","UuidKey"], "start_time": "%s" '
-           ', "table": "FlowRecordTable",')
+           '"underlay_source_port","UuidKey"],'
+           '"table": "FlowRecordTable",')
 
 Validator = common.Validator
 admin_group = cfg.OptGroup(name='admin_account',
@@ -31,6 +31,8 @@ accounts = [
             cfg.StrOpt('query_url',
                                 help=('url of analytics query service')),
             cfg.IntOpt('day_limit',
+                                help=('start_time and end_time period limit')),
+            cfg.IntOpt('time_limit',
                                 help=('start_time and end_time period limit'))
 ]
 
@@ -38,11 +40,13 @@ CONF = cfg.CONF
 CONF.register_group(admin_group)
 CONF.register_opts(accounts, admin_group)
 
-def isInrange(start_time,end_time):
+def isInrange(start_time,end_time,time_limit):
     s_d = datetime.strptime(start_time, '%d-%m-%Y %H:%M:%S')
     e_d = datetime.strptime(end_time, '%d-%m-%Y %H:%M:%S')
     delta= int((e_d - s_d).total_seconds())
-    if delta <= 3600:
+    if delta <= 0:
+        raise exception.TimeRangeError(reason="Invalid input. End time must be greater than start time")
+    if delta <= time_limit:
         return True
     else:
         return False
@@ -73,17 +77,27 @@ def validate_admin_account(account_id,password,m_id,m_pass):
         return False;
 
 #Flow Log API
-def describe_flow_log(context,start_time,end_time,account_id=None,admin_password=None):
+def describe_flow_log(context,start_time,end_time,account_id=None,admin_password=None,direction_ing=None):
     CONF(default_config_files=['/etc/ec2api/ec2api.conf'])
     url = CONF.admin_account.query_url
     day_limit = CONF.admin_account.day_limit
-    if not isInrange(start_time,end_time):
-        raise exception.TimeRangeError(reason='Difference between start and end time '
-                                              'must be less than 1 hour')
+    time_limit = CONF.admin_account.time_limit
+    if not isInrange(start_time,end_time,time_limit):
+        num_min_limit = time_limit/(60)
+        raise exception.TimeRangeError(reason=('Difference between start and end time '
+                                              'should not be greater than %s minutes') % num_min_limit)
     start_time= convert_to_now(start_time,day_limit)
     end_time= convert_to_now(end_time,day_limit)
     account_id_match = CONF.admin_account.account_id
     admin_password_match = CONF.admin_account.password
+    if direction_ing is not None:
+        if direction_ing == 0:
+            name='destvn'
+        elif direction_ing == 1:
+            name = 'sourcevn'
+        else:
+            raise exception.ValidationError(reason="Parameter diection_ing value is invalid. Please enter "
+                                                   "dierection_ing 0 for egress traffic and 1 for ingress traffic")
     if admin_password is None and account_id:
 	raise exception.AuthFailureError(reason='Authorization failed, password missing. '
                                                 'Please enter a valid admin password')
@@ -93,16 +107,25 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
                                                     ' Please enter a valid admin password')
 	#if only account id non for admin show flow log for all account
         if admin_password and account_id is None:
-            data = field + '"end_time": "%s" , "start_time": "%s"}' % (end_time, start_time)
+            if direction_ing is not None:
+                data = field + '"end_time": "%s" , "start_time": "%s", "dir": %s}' % (end_time, start_time,direction_ing)
+            else:
+                data = field + '"end_time": "%s" , "start_time": "%s"}' % (end_time, start_time)
         if admin_password and account_id:
+            if direction_ing is None:
+                raise exception.ValidationError(reason="Parameter direction_ing is missing. Please enter "
+                                                       "direction_ing 0 for egress traffic and 1 for ingress traffic")
             account_id= account_id.split('-')[1]
-            data = field + ('"end_time": "%s" , "start_time": "%s", "where": [[{"name": '
-                           '"sourcevn", "value": "default-domain:Customer-%s:default-virtual-network", '
-                           '"op": 1}]] }') % (end_time, start_time,account_id)
+            data = field + ('"end_time": "%s" , "start_time": "%s", "dir": %s, "filter": [[{"name": '
+                           '"%s", "value": ".*%s.*", '
+                           '"op": 8}]] }') % (end_time, start_time, direction_ing, name, account_id)
     else  :
-        data = field + ('"end_time": "%s" , "start_time": "%s", "where": [[{"name": "sourcevn", '
-                        '"value": "default-domain:Customer-%s:default-virtual-network", '
-                        '"op": 1}]] }') % (end_time, start_time,context.project_id)
+        if diection_ing is None:
+            raise exception.ValidationError(reason="direction_ing is missing. Please enter "
+                                                   "direction_ing 0 for egress traffic and 1 for ingress traffic")
+            data = field + ('"end_time": "%s" , "start_time": "%s", "dir": %s, "filter": [[{"name": "%s", '
+                        '"value": ".*%s.*", '
+                        '"op": 8}]] }') % (end_time, start_time,direction_ing,name,context.project_id)
     req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
     try:
         f = urllib2.urlopen(req,timeout=600)
