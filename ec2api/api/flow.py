@@ -96,7 +96,7 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
         elif direction_ing == 1:
             name = 'sourcevn'
         else:
-            raise exception.ValidationError(reason="Parameter diection_ing value is invalid. Please enter "
+            raise exception.ValidationError(reason="diection_ing value is invalid. Please enter "
                                                    "dierection_ing 0 for egress traffic and 1 for ingress traffic")
     if admin_password is None and account_id:
 	raise exception.AuthFailureError(reason='Authorization failed, password missing. '
@@ -121,7 +121,7 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
                            '"op": 8}]] }') % (end_time, start_time, direction_ing, name, account_id)
     else  :
         if diection_ing is None:
-            raise exception.ValidationError(reason="direction_ing is missing. Please enter "
+            raise exception.ValidationError(reason="Parameter direction_ing is missing. Please enter "
                                                    "direction_ing 0 for egress traffic and 1 for ingress traffic")
             data = field + ('"end_time": "%s" , "start_time": "%s", "dir": %s, "filter": [[{"name": "%s", '
                         '"value": ".*%s.*", '
