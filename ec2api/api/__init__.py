@@ -479,7 +479,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
         client_ip = self._get_x_forwarded_for(req)
         LOG.info(_('Client IP of request:{request_id} is {client_ip}'.\
                     format(request_id=request_id, client_ip=client_ip)))
-        headers['X-Forwarded-For'] = client_ip
+        if client_ip:
+            headers['X-Forwarded-For'] = client_ip
         verify = CONF.ssl_ca_file or not CONF.ssl_insecure
         response = requests.request('POST', iam_validation_url, verify=verify,
                                     data=data, headers=headers)
