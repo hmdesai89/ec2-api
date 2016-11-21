@@ -306,14 +306,15 @@ class AddressEngineNeutron(object):
             for eni in db_api.get_items(context, 'eni'):
                 if instance_id and eni.get('instance_id') == instance_id:
                     instance_network_interfaces.append(eni)
+                    #Reverting changes for JNT-149
                     #Bellow changes done for JNT-149.It will restrict user to allocate more than one
                     # RJIL IP for an instances
                     eni_id= eni['id']  #store network interface id
-                    for epi in db_api.get_items(context, 'eipalloc'):
+                    #for epi in db_api.get_items(context, 'eipalloc'):
                         #If network interface Id will be present in eipalloc data then it will throw the exception
-                        if 'network_interface_id' in  epi:
-                            if eni_id == epi['network_interface_id']:
-                                raise exception.AlreadyRjilIPAssociated(public_ip=epi['public_ip'], allocation_id=epi['id'])
+                    #    if 'network_interface_id' in  epi:
+                    #        if eni_id == epi['network_interface_id']:
+                    #            raise exception.AlreadyRjilIPAssociated(public_ip=epi['public_ip'], allocation_id=epi['id'])
 
         neutron = clients.neutron(context)
         if public_ip:
