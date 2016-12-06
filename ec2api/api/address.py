@@ -31,6 +31,10 @@ from ec2api.i18n import _
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
+
+Status = ['active', 'inactive']
+
+
 """Address related API implementation
 """
 
@@ -99,7 +103,8 @@ def associate_address(context, public_ip=None, instance_id=None,
     #    private_ip_address, allow_reassociation)
     if associationId:
         return {'return': True,
-                'associationId': associationId}
+                'associationId': associationId,
+                'status': Status[1]}
     return {'return': True}
 
 
@@ -111,8 +116,8 @@ def disassociate_address(context, public_ip=None, association_id=None):
         msg = _('You may specify public IP or association id, '
                 'but not both in the same call')
         raise exception.InvalidParameterCombination(msg)
-    address_engine.disassociate_address(context, public_ip, association_id)
-    return True
+    status = address_engine.disassociate_address(context, public_ip, association_id)
+    return {'return': True, 'status': status}
 
 
 def release_address(context, public_ip=None, allocation_id=None):
@@ -143,6 +148,7 @@ class AddressDescriber(common.UniversalDescriber):
     def __init__(self, os_ports, db_instances):
         self.os_ports = os_ports
         self.db_instances_dict = {i['os_id']: i for i in (db_instances or [])}
+        # Here we can add one time ssh and get routes
 
     def format(self, item=None, os_item=None):
         return _format_address(self.context, item, os_item, self.os_ports,
@@ -172,6 +178,9 @@ def describe_addresses(context, public_ip=None, allocation_id=None,
             context, allocation_id, public_ip, filter)
     return {'addressesSet': formatted_addresses}
 
+## Modify this function by adding bgp routes here.
+## Also take care for vagrant environment.
+## Make sure you read from your env.
 
 def _format_address(context, address, os_floating_ip, os_ports=[],
                     db_instances_dict=None):
@@ -203,6 +212,10 @@ def _format_address(context, address, os_floating_ip, os_ports=[],
                             ec2_address['allocationId'], 'eipassoc'),
                     'networkInterfaceId': address['network_interface_id'],
                     'networkInterfaceOwnerId': context.project_id})
+            # Add status over here after checking for route
+            # If route is there then Active else Inactive.
+            # Add/update corresponding entry in db for that.
+        #Add if statement for
     return ec2_address
 
 
@@ -225,15 +238,34 @@ def _associate_address_item(context, address, network_interface_id,
                             private_ip_address):
     LOG.debug("Associating address in DB : {} nid: {} pip: {}".format(str(address),str(network_interface_id),str(private_ip_address)))
     address['network_interface_id'] = network_interface_id
-    address['private_ip_address'] = private_ip_address
+    address['private_ip_address'] = private_ip_address            
+    address['status'] = Status[1]
     db_api.update_item(context, address)
+    
 
 
 def _disassociate_address_item(context, address):
     LOG.debug("Disassociating address in DB : {}".format(str(address)))
     address.pop('network_interface_id')
     address.pop('private_ip_address')
+    
+    # This condition will help in migration
+    # where there are ip's that are allocated but do not have status
+    if 'status' in address :
+        if address['status'] == Status[1] :
+            # if current status of FIP is inactive
+            # we will check here if status is still inactive or changed to active
+            #address['status'] = check_address_status(address['public_ip'])
+            pass
+        else :
+            address['status'] = Status[0]
+    else :
+        # Add status in old entries
+        #address['status'] = check_address_status(address['public_ip'])
+        pass
+        
     db_api.update_item(context, address)
+    return address['status']
 
 
 class AddressEngineNeutron(object):
@@ -316,6 +348,8 @@ class AddressEngineNeutron(object):
                     #        if eni_id == epi['network_interface_id']:
                     #            raise exception.AlreadyRjilIPAssociated(public_ip=epi['public_ip'], allocation_id=epi['id'])
 
+
+    
         neutron = clients.neutron(context)
         if public_ip:
             if instance_network_interfaces:
@@ -361,6 +395,8 @@ class AddressEngineNeutron(object):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
         
+        # Check if disassociation is complete or not
+
         ###This will validate db entry and will change entry accordingly
         validate_db(context,address)        
 
@@ -377,6 +413,14 @@ class AddressEngineNeutron(object):
                                                 address['id'], 'eipassoc')}
             raise exception.ResourceAlreadyAssociated(msg)
         else:
+            #Check if disassociate is done or not.
+            if 'status' in address :
+                if check_address_status(address['public_ip']) == 'active' :
+                    msg = _(' resource %(eipassoc_id) is still disassociating. Retry in few seconds ')
+                    msg = msg % { 'eipassoc_id': ec2utils.change_ec2_id_kind(
+                                                address['id'], 'eipassoc') }
+                    raise exception.ResourceStillDisassociating(msg)
+                
             internet_gateways = (
                 internet_gateway_api.describe_internet_gateways(
                     context,
@@ -429,12 +473,14 @@ class AddressEngineNeutron(object):
             with common.OnCrashCleaner() as cleaner:
                 network_interface_id = address['network_interface_id']
                 private_ip_address = address['private_ip_address']
-                _disassociate_address_item(context, address)
+                status = _disassociate_address_item(context, address)
                 cleaner.addCleanup(_associate_address_item, context, address,
                                    network_interface_id, private_ip_address)
 
                 neutron.update_floatingip(address['os_id'],
                                           {'floatingip': {'port_id': None}})
+                
+                return status
 
     def get_os_floating_ips(self, context):
         neutron = clients.neutron(context)
@@ -509,7 +555,7 @@ class AddressEngineNova(object):
         nova_ip = next((ip for ip in nova_floating_ips
                         if ip.ip == public_ip), None)
         if nova_ip is None:
-            msg = _("The address '%(public_ip)s' does not belong to you.")
+            msg = _( "The address '%(public_ip)s' does not belong to you.")
             raise exception.AuthFailure(msg % {'public_ip': public_ip})
         return nova_ip
 
