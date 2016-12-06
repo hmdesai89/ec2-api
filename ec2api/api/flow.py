@@ -16,8 +16,8 @@ field = ('{"limit": 100000, "select_fields": ['
            '"sourcevn", "sourceip", "destvn", "destip", "protocol", '
            '"sport", "dport",  "direction_ing", "setup_time", '
            '"teardown_time","agg-packets", "agg-bytes", "action", '
-           '"sg_rule_uuid", "nw_ace_uuid",  "underlay_proto", '
-           '"underlay_source_port","UuidKey"],'
+           '"sg_rule_uuid",  "underlay_proto", '
+           '"underlay_source_port"],'
            '"table": "FlowRecordTable",')
 
 Validator = common.Validator
@@ -77,7 +77,7 @@ def validate_admin_account(account_id,password,m_id,m_pass):
         return False;
 
 #Flow Log API
-def describe_flow_log(context,start_time,end_time,account_id=None,admin_password=None,direction_ing=None):
+def describe_flow_logs(context,start_time,end_time,account_id=None,admin_password=None,direction_ing=None):
     CONF(default_config_files=['/etc/ec2api/ec2api.conf'])
     url = CONF.admin_account.query_url
     day_limit = CONF.admin_account.day_limit
@@ -132,3 +132,54 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
     except urllib2.HTTPError as err:
         raise exception.ConnectionError(reason=err)
     return json.load(f)
+
+
+def enable_flow_logs(context,flow_logging):
+    bucket_name= 'vpc-flow-logs-%s' % context.project_id[20:]
+    flows = db_api.get_items(context, 'flow')
+    flow_id = None
+    for flow in flows:
+        if flow['os_id'] == context.project_id:
+            flow_id= flow['id']
+            break
+
+    with common.OnCrashCleaner() as cleaner:
+
+        if flow_logging == 1:
+            if flow_id is not None:
+                raise exception.AuthFailureError(reason='Flow_log already enabled')
+            flow = db_api.add_item(context, 'flow',
+                                   {'os_id': context.project_id,
+                                    'bucket_name': bucket_name})
+            cleaner.addCleanup(db_api.delete_item, context, flow['id'])
+            return {'Flow_status' : 'enable','bucket_name': bucket_name}
+        else:
+            if flow_id is None:
+                raise exception.AuthFailureError(reason='Flow_log already disabled')
+    
+            db_api.delete_item(context, flow_id)
+            cleaner.addCleanup(db_api.restore_item, context, 'flow', flow)
+    
+            return True
+
+def describe_flow_logs_status(context):
+    flows = db_api.get_items(context, 'flow')
+    flow_id = None
+    bucket_name=None
+    for flow in flows:
+        if flow['os_id'] == context.project_id:
+            flow_id= flow['id']
+            bucket_name=flow['bucket_name']
+            break
+    if flow_id== None:
+        return  {'status': 'Disable'}
+    else:
+        return {'status' :'Enable','bucket_name': bucket_name}
+
+def describe_flow_log_enable_accounts(context):
+    flows = db_api.get_items_ids(context, 'flow')
+    flow_id = []
+    sys.stdout.flush()
+    for flow in flows:
+        flow_id.append(flow[1])
+    return {'account_ids': flow_id}

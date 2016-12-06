@@ -1806,10 +1806,32 @@ class VpcCloudController(CloudController):
 
     @module_and_param_types(flow,'time_string','time_string',
                             'account_id','str','int')
-    def describe_flow_log(self, context,start_time,end_time,
+    def describe_flow_logs(self, context,start_time,end_time,
                                     account_id=None,
                                     admin_password=None,direction_ing=None):
        """  
 
+       """
+
+
+    @module_and_param_types(flow,'bool')
+    def enable_flow_logs(self,context,flow_logging):
+       """  
+
+       
+       """
+
+    @module_and_param_types(flow)
+    def describe_flow_logs_status(self,context):
+       """  
+
+       
+       """
+
+    @module_and_param_types(flow)
+    def describe_flow_log_enable_accounts(self,context):
+       """  
+
+       
        """
 
