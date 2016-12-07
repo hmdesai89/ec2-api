@@ -319,7 +319,7 @@ def _update_status(context,address, status):
     db_api.update_item(context,address)
     
 def _pop_status(context,address):
-    address.pop['status']
+    address.pop('status')
     db_api.update_item(context,address)
 
 
