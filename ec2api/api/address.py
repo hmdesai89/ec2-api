@@ -27,13 +27,17 @@ from ec2api.api import internet_gateway as internet_gateway_api
 from ec2api.db import api as db_api
 from ec2api import exception
 from ec2api.i18n import _
+import paramiko
+import re   
+
+
+
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
-
+RouterIP = '110.204.115.116'
 Status = ['active', 'inactive']
-
 
 """Address related API implementation
 """
@@ -42,6 +46,19 @@ Status = ['active', 'inactive']
 Validator = common.Validator
 
 
+
+def get_rt_ip_status(publicIp):
+    status = Status[1]
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(RouterIP, username='change', password='change')
+    stdin, stdout, stderr = client.exec_command('show route '+publicIp +' detail'+ ' | grep \"Protocol next hop\"')
+    for line in stdout:
+        if re.match('\s+Protocol next hop: \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*', line) !=None :
+            status = Status[0]
+            break
+    client.close()
+    return status
 
 
     ### This function is called in order to remove any descrepancies
@@ -168,7 +185,7 @@ class AddressDescriber(common.UniversalDescriber):
             LOG.error("Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(item), str(os_item)))
         
         
-        ## still need to change acive and inactive
+        ## still need to change active and inactive
         # If it has network_interface and status is inactive then association is happened
         # check whether new network is available in router 
         # If it doesn't have network interface and status is active
@@ -177,22 +194,25 @@ class AddressDescriber(common.UniversalDescriber):
             if (item['status'] == Status[1] and 'network_interface_id' in item) :
                 
                 #check for route
-                # item['status'] = 
-                LOG.error('Address {} is inactive and is associated. Adding status as {}'.format(str(item), str(status[0])))
-                item['status'] = Status[0]
-                pass
+                item['status'] = get_rt_ip_status(item['public_ip'])
+                LOG.error('Address {} is inactive and is associated. Adding status as {}'.format(str(item), item['status']))
+                if item['status'] == Status[0] :
+                    _update_status(self.context, item, Status[0])
+                    
             elif ( item['status'] == Status[0] and 'network_interface_id' not in item ) :
                 #check for route
-                #item['status'] = 
-                LOG.error('Address {} is Active but disassociated. Adding status as inactive {}'.format(str(item), str(status[1])))
-                item[status] = Status[1]
-                pass
-            
+                item['status'] = get_rt_ip_status(item['public_ip']) 
+                LOG.error('Address {} is disassociated and active. Current status is {}'.format(str(item), item['status']))
+                #pop if status is inactive
+                if item['status'] ==Status[1] :
+                    _pop_status(self.context, item)
+        
+        #This is for migration whenever an old associated address is described.    
         if (item and 'network_interface_id' in item and 'status' not in item) :
             #check for routes
-            #item[status]
-            LOG.error('Address {} do not have status. Adding status as {}'.format(str(item), str(Status[0])))
-            item['status'] = Status[0]
+            item['status'] = get_rt_ip_status(item['public_ip'])
+            LOG.error('Address {} do not have status. Adding status as {}'.format(str(item), item['status']))
+            _update_status(self.context, item, item['status'])
             
             
         return item
@@ -287,26 +307,20 @@ def _disassociate_address_item(context, address):
     address.pop('network_interface_id')
     address.pop('private_ip_address')
     
-    # This condition will help in migration
+    # This condition will help in migration of already associated IP
     # where there are ip's that are allocated but do not have status
-    if 'status' in address :
-        if address['status'] == Status[1] :
-            # if current status of FIP is inactive
-            # we will check here if status is still inactive or changed to active
-            #address['status'] = check_address_status(address['public_ip'])
-            #if address['status'] == Status[1]:
-            #    address.pop('status')
-                
-            pass
-        else :
-            address['status'] = Status[0]
-    else :
-        # Add status in old entries
-        #address['status'] = check_address_status(address['public_ip'])
-        pass
+    address['status'] = get_rt_ip_status(address['public_ip'])
         
     db_api.update_item(context, address)
     return address['status']
+
+def _update_status(context,address, status):
+    address['status'] = status
+    db_api.update_item(context,address)
+    
+def _pop_status(context,address):
+    address.pop['status']
+    db_api.update_item(context,address)
 
 
 class AddressEngineNeutron(object):
@@ -436,8 +450,6 @@ class AddressEngineNeutron(object):
             raise exception.InvalidAllocationIDNotFound(
                 id=allocation_id)
         
-        # Check if disassociation is complete or not
-
         ###This will validate db entry and will change entry accordingly
         validate_db(context,address)        
 
@@ -456,7 +468,7 @@ class AddressEngineNeutron(object):
         else:
             #Check if disassociate is done or not.
             if 'status' in address :
-                if check_address_status(address['public_ip']) == 'active' :
+                if get_rt_ip_status(address['public_ip']) == Status[0] :
                     msg = _(' resource %(eipassoc_id) is still disassociating. Retry in few seconds ')
                     msg = msg % { 'eipassoc_id': ec2utils.change_ec2_id_kind(
                                                 address['id'], 'eipassoc') }

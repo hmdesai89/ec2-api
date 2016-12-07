@@ -295,6 +295,9 @@ class CannotDelete(EC2IncorrectStateException):
 
 class ResourceAlreadyAssociated(EC2IncorrectStateException):
     ec2_code = 'Resource.AlreadyAssociated'
+    
+class AddressStillDisassociating(EC2IncorrectStateException):
+    ec2_code = 'Address.StillDisassociating'
 
 class AlreadyRjilIPAssociated(EC2IncorrectStateException):
     ec2_code = 'AlreadyAssociated.RJILIP'
