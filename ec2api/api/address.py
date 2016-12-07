@@ -143,7 +143,8 @@ class AddressDescriber(common.UniversalDescriber):
                   'network-interface-id': 'networkInterfaceId',
                   'network-interface-owner-id': 'networkInterfaceOwnerId',
                   'private-ip-address': 'privateIpAddress',
-                  'public-ip': 'publicIp'}
+                  'public-ip': 'publicIp',
+                  'status': 'status'}
 
     def __init__(self, os_ports, db_instances):
         self.os_ports = os_ports
@@ -159,11 +160,41 @@ class AddressDescriber(common.UniversalDescriber):
 
     def auto_update_db(self, item, os_item):
         item = super(AddressDescriber, self).auto_update_db(item, os_item)
+        LOG.error('{}'.format(str(item)))
         if (item and 'network_interface_id' in item and
                 (not os_item.get('port_id') or
                  os_item['fixed_ip_address'] != item['private_ip_address'])):
             _disassociate_address_item(self.context, item)
             LOG.error("Auto update triggered disassociation - Local DB item : {} OS item : {}".format(str(item), str(os_item)))
+        
+        
+        ## still need to change acive and inactive
+        # If it has network_interface and status is inactive then association is happened
+        # check whether new network is available in router 
+        # If it doesn't have network interface and status is active
+        # then disassociation has happened check for update
+        if (item and 'status' in item) :
+            if (item['status'] == Status[1] and 'network_interface_id' in item) :
+                
+                #check for route
+                # item['status'] = 
+                LOG.error('Address {} is inactive and is associated. Adding status as {}'.format(str(item), str(status[0])))
+                item['status'] = Status[0]
+                pass
+            elif ( item['status'] == Status[0] and 'network_interface_id' not in item ) :
+                #check for route
+                #item['status'] = 
+                LOG.error('Address {} is Active but disassociated. Adding status as inactive {}'.format(str(item), str(status[1])))
+                item[status] = Status[1]
+                pass
+            
+        if (item and 'network_interface_id' in item and 'status' not in item) :
+            #check for routes
+            #item[status]
+            LOG.error('Address {} do not have status. Adding status as {}'.format(str(item), str(Status[0])))
+            item['status'] = Status[0]
+            
+            
         return item
 
     def get_name(self, os_item):
@@ -211,10 +242,17 @@ def _format_address(context, address, os_floating_ip, os_ports=[],
                     'associationId': ec2utils.change_ec2_id_kind(
                             ec2_address['allocationId'], 'eipassoc'),
                     'networkInterfaceId': address['network_interface_id'],
-                    'networkInterfaceOwnerId': context.project_id})
+                    'networkInterfaceOwnerId': context.project_id,
+                    'status': address['status'] })
             # Add status over here after checking for route
             # If route is there then Active else Inactive.
             # Add/update corresponding entry in db for that.
+        elif 'status' in address:
+            ec2_address.update({
+                    'associationId': ec2utils.change_ec2_id_kind(
+                            ec2_address['allocationId'], 'eipassoc'),
+                    'status': address['status'] })  
+            
         #Add if statement for
     return ec2_address
 
@@ -256,6 +294,9 @@ def _disassociate_address_item(context, address):
             # if current status of FIP is inactive
             # we will check here if status is still inactive or changed to active
             #address['status'] = check_address_status(address['public_ip'])
+            #if address['status'] == Status[1]:
+            #    address.pop('status')
+                
             pass
         else :
             address['status'] = Status[0]
@@ -419,7 +460,7 @@ class AddressEngineNeutron(object):
                     msg = _(' resource %(eipassoc_id) is still disassociating. Retry in few seconds ')
                     msg = msg % { 'eipassoc_id': ec2utils.change_ec2_id_kind(
                                                 address['id'], 'eipassoc') }
-                    raise exception.ResourceStillDisassociating(msg)
+                    raise exception.AddressStillDisassociating(msg)
                 
             internet_gateways = (
                 internet_gateway_api.describe_internet_gateways(
