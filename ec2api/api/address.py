@@ -30,13 +30,28 @@ from ec2api.i18n import _
 import paramiko
 import re   
 
+CONF = cfg.CONF
 
-
+address_opts = [
+    cfg.StrOpt('router_address',
+               default='',
+               help='Address of router to get routes'),
+    cfg.StrOpt('router_user',
+               default='',
+               help='Username for router'),
+    cfg.StrOpt('router_cred',
+               default='',
+               help='Creds for Router'),
+]
 
 CONF = cfg.CONF
+CONF.register_opts(address_opts)
 LOG = logging.getLogger(__name__)
 
-RouterIP = '110.204.115.116'
+RouterIP = CONF.router_address
+RouterUser = CONF.router_user
+RouterCred = CONF.router_cred 
+
 Status = ['active', 'inactive']
 
 """Address related API implementation
@@ -51,7 +66,7 @@ def get_rt_ip_status(publicIp):
     status = Status[1]
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(RouterIP, username='change', password='change')
+    client.connect(RouterIP, username=RouterUser, password=RouterCred)
     stdin, stdout, stderr = client.exec_command('show route '+publicIp +' detail'+ ' | grep \"Protocol next hop\"')
     for line in stdout:
         if re.match('\s+Protocol next hop: \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*', line) !=None :
@@ -166,7 +181,6 @@ class AddressDescriber(common.UniversalDescriber):
     def __init__(self, os_ports, db_instances):
         self.os_ports = os_ports
         self.db_instances_dict = {i['os_id']: i for i in (db_instances or [])}
-        # Here we can add one time ssh and get routes
 
     def format(self, item=None, os_item=None):
         return _format_address(self.context, item, os_item, self.os_ports,
@@ -177,7 +191,6 @@ class AddressDescriber(common.UniversalDescriber):
 
     def auto_update_db(self, item, os_item):
         item = super(AddressDescriber, self).auto_update_db(item, os_item)
-        LOG.error('{}'.format(str(item)))
         if (item and 'network_interface_id' in item and
                 (not os_item.get('port_id') or
                  os_item['fixed_ip_address'] != item['private_ip_address'])):
@@ -264,16 +277,14 @@ def _format_address(context, address, os_floating_ip, os_ports=[],
                     'networkInterfaceId': address['network_interface_id'],
                     'networkInterfaceOwnerId': context.project_id,
                     'status': address['status'] })
-            # Add status over here after checking for route
-            # If route is there then Active else Inactive.
-            # Add/update corresponding entry in db for that.
+
+        #Show associationId if status is in the db adn network_interface is not
         elif 'status' in address:
             ec2_address.update({
                     'associationId': ec2utils.change_ec2_id_kind(
                             ec2_address['allocationId'], 'eipassoc'),
                     'status': address['status'] })  
             
-        #Add if statement for
     return ec2_address
 
 
@@ -301,13 +312,12 @@ def _associate_address_item(context, address, network_interface_id,
     db_api.update_item(context, address)
     
 
-
 def _disassociate_address_item(context, address):
     LOG.debug("Disassociating address in DB : {}".format(str(address)))
     address.pop('network_interface_id')
     address.pop('private_ip_address')
     
-    # This condition will help in migration of already associated IP
+    # This will help in migration of already associated IP
     # where there are ip's that are allocated but do not have status
     address['status'] = get_rt_ip_status(address['public_ip'])
         
@@ -403,8 +413,6 @@ class AddressEngineNeutron(object):
                     #        if eni_id == epi['network_interface_id']:
                     #            raise exception.AlreadyRjilIPAssociated(public_ip=epi['public_ip'], allocation_id=epi['id'])
 
-
-    
         neutron = clients.neutron(context)
         if public_ip:
             if instance_network_interfaces:
@@ -469,7 +477,7 @@ class AddressEngineNeutron(object):
             #Check if disassociate is done or not.
             if 'status' in address :
                 if get_rt_ip_status(address['public_ip']) == Status[0] :
-                    msg = _(' resource %(eipassoc_id) is still disassociating. Retry in few seconds ')
+                    msg = _('address %(eipassoc_id)s is still disassociating. Retry in few seconds ')
                     msg = msg % { 'eipassoc_id': ec2utils.change_ec2_id_kind(
                                                 address['id'], 'eipassoc') }
                     raise exception.AddressStillDisassociating(msg)
