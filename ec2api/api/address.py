@@ -52,7 +52,7 @@ RouterIP = CONF.router_address
 RouterUser = CONF.router_user
 RouterCred = CONF.router_cred 
 
-Status = ['active', 'inactive']
+Status = ['active', 'pending']
 
 """Address related API implementation
 """
