@@ -204,13 +204,19 @@ class AddressDescriber(common.UniversalDescriber):
         # If it doesn't have network interface and status is active
         # then disassociation has happened check for update
         if (item and 'status' in item) :
-            if (item['status'] == Status[1] and 'network_interface_id' in item) :
+            if (item['status'] == Status[1] ) :
                 
-                #check for route
                 item['status'] = get_rt_ip_status(item['public_ip'])
-                LOG.error('Address {} is inactive and is associated. Adding status as {}'.format(str(item), item['status']))
-                if item['status'] == Status[0] :
-                    _update_status(self.context, item, Status[0])
+                
+                if('network_interface_id' in item) :                
+                    #check for route
+                    LOG.error('Address {} is pending and is associated. Adding status as {}'.format(str(item), item['status']))
+                    if item['status'] == Status[0] :
+                        _update_status(self.context, item, Status[0])
+
+                else :
+                    LOG.error('Address {} is pending and not associated. Popping status field'.format(str(item)))
+                    _pop_status(self.context, item)
                     
             elif ( item['status'] == Status[0] and 'network_interface_id' not in item ) :
                 #check for route
