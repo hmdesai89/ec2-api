@@ -157,7 +157,9 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'CreateExtnetwork' : '',
                           'UpdateQuota' : '',
                           'ShowQuota' : '',
-                          'DescribeFlowLog' : ''
+                          'DescribeFlowLog' : '',
+                          'CreatePassAccount' : '',
+                          'DeletePassAccount' : ''
                         }
 
     armappingdict = {
@@ -288,7 +290,9 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'CreateExtnetwork': None,
                           'UpdateQuota': None,
                           'ShowQuota' : None,
-                          'DescribeFlowLog' : None
+                          'DescribeFlowLog' : None,
+                          'CreatePassAccount' : None,
+                          'DeletePassAccount' : None
                     }
 
     def _get_signature(self, req):

@@ -1339,6 +1339,30 @@ class VpcCloudController(CloudController):
     def show_quota(self, context, account):
         """
         """
+    
+    @module_and_param_types('account_id')
+    def create_pass_account(self, context, account_id):
+        """ Creates a PASS account entry for specified account
+        
+        Args:
+            context (RequestContext): The request context.
+            account_id : ID of the account for which PASS must be enabled
+            
+        Returns:
+            Pass account number and pass-id
+        """
+
+    @module_and_param_types('account_id')
+    def delete_pass_account(self, context, account_id):
+        """ Deletes a PASS account entry for specified account
+        
+        Args:
+            context (RequestContext): The request context.
+            account_id : ID of the account to delete pass
+            
+        Returns:
+           True if account is deleted
+        """
 
     @module_and_param_types(route_table, 'vpc_id')
     def create_route_table(self, context, vpc_id):
