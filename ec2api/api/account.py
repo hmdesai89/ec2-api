@@ -65,7 +65,8 @@ def delete_paas_account(context, account_id):
     dummy_context = context  
     dummy_context.project_id = account_id
       
-    pass_acc = ec2utils.get_db_items(context, 'paas')
+    paas_acc = ec2utils.get_db_items(context, 'paas')
+    paas_acc = paas_acc[0]
 
     ## We need project-id equal to  tenant-id
     ## changing context.project id
@@ -80,7 +81,7 @@ def delete_paas_account(context, account_id):
         msg = msg % {'account_id': account_id}
         raise exception.DependencyViolation(msg)
      
-    db_api.delete_item(dummy_context, pass_acc[id])    
+    db_api.delete_item(dummy_context, paas_acc[id])    
     return True
 
 def _format_pass_account(context,account, status):
