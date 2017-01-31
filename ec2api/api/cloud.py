@@ -42,6 +42,7 @@ from ec2api.api import tag
 from ec2api.api import volume
 from ec2api.api import vpc
 from ec2api.api import flow
+from ec2api.api import account
 from ec2api import exception
 
 CONF = cfg.CONF
@@ -1340,8 +1341,8 @@ class VpcCloudController(CloudController):
         """
         """
     
-    @module_and_param_types('account_id')
-    def create_pass_account(self, context, account_id):
+    @module_and_param_types(account, 'account_id')
+    def create_paas_account(self, context, account_id):
         """ Creates a PASS account entry for specified account
         
         Args:
@@ -1352,8 +1353,8 @@ class VpcCloudController(CloudController):
             Pass account number and pass-id
         """
 
-    @module_and_param_types('account_id')
-    def delete_pass_account(self, context, account_id):
+    @module_and_param_types(account, 'account_id')
+    def delete_paas_account(self, context, account_id):
         """ Deletes a PASS account entry for specified account
         
         Args:

@@ -158,8 +158,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota' : '',
                           'ShowQuota' : '',
                           'DescribeFlowLog' : '',
-                          'CreatePassAccount' : '',
-                          'DeletePassAccount' : ''
+                          'CreatePaasAccount' : '',
+                          'DeletePaasAccount' : ''
                         }
 
     armappingdict = {
@@ -291,8 +291,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota': None,
                           'ShowQuota' : None,
                           'DescribeFlowLog' : None,
-                          'CreatePassAccount' : None,
-                          'DeletePassAccount' : None
+                          'CreatePaasAccount' : None,
+                          'DeletePaasAccount' : None
                     }
 
     def _get_signature(self, req):

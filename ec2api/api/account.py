@@ -37,10 +37,11 @@ Validator = common.Validator
 def create_paas_account(context, account_id):
 
 
+    account_id = account_id[4:]
     ## Who all should be able to create an pass account
     account = context.project_id
     
-    ## We need project-id equal to  tenant-id
+    ## We need project-i&*d equal to  tenant-id
     ## changing context.project id
     dummy_context = context    
     dummy_context.project_id = account_id
@@ -52,23 +53,28 @@ def create_paas_account(context, account_id):
         
         if pass_acc :
            raise exception.PassAccountAleradyExisting() 
-        
-        db_api.add_item_id(context, 'paas', account_id, project_id=account_id)      
+       
+       
+        os_id = ec2utils.convert_to_os_id(account_id)
+        db_api.add_item_id(context, 'paas', os_id, project_id=account_id)      
         return {'paas-account': _format_pass_account(context, account, 'Enable' )}
 
-def delete_pass_account(context, account_id):
-    
-    pass_acc = ec2utils.get_db_item(context, kind = 'paas')
+def delete_paas_account(context, account_id):
+ 
+    account_id = account_id[4:]
+    dummy_context = context  
+    dummy_context.project_id = account_id
+      
+    pass_acc = ec2utils.get_db_items(context, 'paas')
 
     ## We need project-id equal to  tenant-id
     ## changing context.project id
-    dummy_context = context  
-    dummy_context.project_id = account_id
+
     
-    pni = db_api.get_items(dummy_context, 'pni')
+    pni = db_api.get_items(dummy_context, 'pni', None)
     
     
-    if pni == None :
+    if pni :
         msg = _("The PASS account '%(account_id)' has dependencies and "
                 "cannot be deleted.")
         msg = msg % {'account_id': account_id}
