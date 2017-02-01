@@ -362,4 +362,4 @@ def get_os_public_network(context):
     return os_networks[0]
 
 def convert_to_os_id(item):
-    return item[:8]+'-'+item[9:12]+'-'+item[13:16]+'-'+item[17:20]+'-'+item[21:]
+    return item[:8]+'-'+item[8:12]+'-'+item[12:16]+'-'+item[16:20]+'-'+item[20:]
