@@ -57,7 +57,7 @@ def create_paas_account(context, account_id):
        
         os_id = ec2utils.convert_to_os_id(account_id)
         db_api.add_item_id(context, 'paas', os_id, project_id=account_id)      
-        return {'paas-account': _format_pass_account(context, account, 'Enable' )}
+        return {'paas-account': _format_pass_account(context, account_id, 'Enable' )}
 
 def delete_paas_account(context, account_id):
  
