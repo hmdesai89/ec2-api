@@ -72,11 +72,11 @@ def delete_paas_account(context, account_id):
     ## changing context.project id
 
     
-    pni = db_api.get_items(dummy_context, 'pni', None)
+    pni = db_api.get_items(dummy_context, 'pni')
     
     
     if pni :
-        msg = _("The PASS account '%(account_id)' has dependencies and "
+        msg = _("The PASS account '%(account_id)s' has dependencies and "
                 "cannot be deleted.")
         msg = msg % {'account_id': account_id}
         raise exception.DependencyViolation(msg)
