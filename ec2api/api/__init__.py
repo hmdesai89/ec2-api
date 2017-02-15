@@ -154,12 +154,6 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DisassociateAddress' : '',
                           'ReleaseAddress' : '',
                           'DescribeAddresses' : '',
-                          'CreateExtnetwork' : '',
-                          'UpdateQuota' : '',
-                          'ShowQuota' : '',
-                          'DescribeFlowLog' : '',
-                          'CreatePassAccount' : '',
-                          'DeletePassAccount' : ''
                         }
 
     armappingdict = {
@@ -287,12 +281,6 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                           "resource": "jrn:jcs:vpc::SecurityGroup:",
                                           "implicit_allow": "False"
                                        },
-                          'CreateExtnetwork': None,
-                          'UpdateQuota': None,
-                          'ShowQuota' : None,
-                          'DescribeFlowLog' : None,
-                          'CreatePassAccount' : None,
-                          'DeletePassAccount' : None
                     }
 
     def _get_signature(self, req):
@@ -539,6 +527,134 @@ class EC2KeystoneAuth(wsgi.Middleware):
         req.environ['ec2api.context'] = ctxt
 
         return self.application
+
+class EC2KeystoneAuthInternal(wsgi.Middleware):
+
+    """Authenticate an EC2 request with keystone and convert to context."""
+
+    allowedaction = {
+                          'CreateExtnetwork' : '',
+                          'UpdateQuota' : '',
+                          'ShowQuota' : '',
+                          'DescribeFlowLog' : '',
+                          'CreatePassAccount' : '',
+                          'DeletePassAccount' : ''
+                        }
+
+
+
+    def _get_auth_token(self, req):
+        """Extract the Auth token from the request
+
+        This is the header X-Auth-Token present in the request
+        """
+        auth_token = None
+
+        auth_token = req.headers.get('X-Auth-Token')
+
+        return auth_token
+
+    def _get_x_forwarded_for(self, req):
+        client_ip = req.headers.get('X-Forwarded-For')
+        return client_ip
+
+
+    @webob.dec.wsgify(RequestClass=wsgi.Request)
+    def __call__(self, req):
+        request_id = context.generate_request_id()
+
+        # NOTE(alevine) We need to calculate the hash here because
+        # subsequent access to request modifies the req.body so the hash
+        # calculation will yield invalid results.
+
+        headers = {'Content-Type': 'application/json'}
+
+        auth_token = self._get_auth_token(req)
+
+        if None == auth_token:
+                msg = _("AuthToken in needed for internal api call")
+                return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                                 status=400)
+
+        action = req.params.get('Action')
+
+        if None == action:
+            msg = _("Action : " + action + " Not Found")
+            return faults.ec2_error_response(request_id, "ActionNotFound", msg,
+                                             status=404)
+        elif action not in self.allowedaction :
+                msg = _("Action not allowed in internal api call")
+                return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                                 status=400)
+        if auth_token:
+            data = {}
+
+            iam_validation_url = CONF.keystone_token_url
+
+            headers['X-Auth-Token'] = auth_token
+
+            data = jsonutils.dumps(data)
+
+        client_ip = self._get_x_forwarded_for(req)
+        LOG.info(_('Client IP of request:{request_id} is {client_ip}'.\
+                    format(request_id=request_id, client_ip=client_ip)))
+        if client_ip:
+            headers['X-Forwarded-For'] = client_ip
+        verify = CONF.ssl_ca_file or not CONF.ssl_insecure
+        response = requests.request('POST', iam_validation_url, verify=verify,
+                                    data=data, headers=headers)
+        status_code = response.status_code
+        if status_code != 200:
+            LOG.error("Request headers - %s", str(headers))
+            LOG.error("Request params - %s", str(data))
+            LOG.error("Response headers - %s", str(response.headers))
+            LOG.error("Response content - %s", str(response._content))
+            msg = response.reason
+            return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                             status=status_code)
+        result = response.json()
+
+        try:
+            user_id = result['user_id']
+            project_id = result['account_id']
+
+            if auth_token:
+                token_id = auth_token
+            else:
+                token_id = result['token_id']
+
+            if not token_id or not project_id or not user_id:
+                raise KeyError
+
+            user_name = project_name = 'default'
+            roles = []
+            catalog = []
+        except (AttributeError, KeyError):
+            LOG.exception(_("Keystone failure"))
+            msg = _("Failure communicating with keystone")
+            return faults.ec2_error_response(request_id, "AuthFailure", msg,
+                                             status=400)
+
+        remote_address = req.remote_addr
+        if CONF.use_forwarded_for:
+            remote_address = req.headers.get('X-Forwarded-For',
+                                             remote_address)
+
+        ctxt = context.RequestContext(user_id, project_id,
+                                      user_name=user_name,
+                                      project_name=project_name,
+                                      roles=roles,
+                                      auth_token=token_id,
+                                      remote_address=remote_address,
+                                      service_catalog=catalog,
+                                      api_version=req.params.get('Version'),
+                                      request_id=request_id)
+
+        req.environ['ec2api.context'] = ctxt
+
+        return self.application
+
+
 
 
 class Requestify(wsgi.Middleware):
