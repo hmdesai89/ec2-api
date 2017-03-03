@@ -76,7 +76,7 @@ def delete_paas_account(context, account_id):
     
     
     if pni :
-        msg = _("The PASS account '%(account_id)s' has dependencies and "
+        msg = _("The PAAS account '%(account_id)s' has dependencies and "
                 "cannot be deleted.")
         msg = msg % {'account_id': account_id}
         raise exception.DependencyViolation(msg)
@@ -88,7 +88,7 @@ def _format_pass_account(context,account, status):
 
     return {
         'acc-id' : account,
-        'pass' : status
+        'paas' : status
     }
 
 
