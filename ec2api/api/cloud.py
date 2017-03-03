@@ -1343,19 +1343,19 @@ class VpcCloudController(CloudController):
     
     @module_and_param_types(account, 'account_id')
     def create_paas_account(self, context, account_id):
-        """ Creates a PASS account entry for specified account
+        """ Creates a PAAS account entry for specified account
         
         Args:
             context (RequestContext): The request context.
-            account_id : ID of the account for which PASS must be enabled
+            account_id : ID of the account for which PAAS must be enabled
             
         Returns:
-            Pass account number and pass-id
+            Pass account number and paas-id
         """
 
     @module_and_param_types(account, 'account_id')
     def delete_paas_account(self, context, account_id):
-        """ Deletes a PASS account entry for specified account
+        """ Deletes a PAAS account entry for specified account
         
         Args:
             context (RequestContext): The request context.

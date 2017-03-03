@@ -38,7 +38,7 @@ def create_paas_account(context, account_id):
 
 
     account_id = account_id[4:]
-    ## Who all should be able to create an pass account
+    ## Who all should be able to create an paas account
     account = context.project_id
     
     ## We need project-i&*d equal to  tenant-id
@@ -47,17 +47,17 @@ def create_paas_account(context, account_id):
     dummy_context.project_id = account_id
 
     with common.OnCrashCleaner() as cleaner:
-        ## Check if an PASS account for this tenant already exist
-        pass_acc = next((i for i in db_api.get_items(dummy_context, 'paas')
+        ## Check if an PAAS account for this tenant already exist
+        paas_acc = next((i for i in db_api.get_items(dummy_context, 'paas')
                      if i['os_id'] == account_id), None)
         
-        if pass_acc :
+        if paas_acc :
            raise exception.PassAccountAleradyExisting() 
        
        
         os_id = ec2utils.convert_to_os_id(account_id)
         db_api.add_item_id(context, 'paas', os_id, project_id=account_id)      
-        return {'paas-account': _format_pass_account(context, account_id, 'Enable' )}
+        return {'paas-account': _format_paas_account(context, account_id, 'Enable' )}
 
 def delete_paas_account(context, account_id):
  
@@ -76,7 +76,7 @@ def delete_paas_account(context, account_id):
     
     
     if pni :
-        msg = _("The PASS account '%(account_id)s' has dependencies and "
+        msg = _("The PAAS account '%(account_id)s' has dependencies and "
                 "cannot be deleted.")
         msg = msg % {'account_id': account_id}
         raise exception.DependencyViolation(msg)
@@ -84,29 +84,29 @@ def delete_paas_account(context, account_id):
     db_api.delete_item(dummy_context, paas_acc['id'])    
     return True
 
-def _format_pass_account(context,account, status):
+def _format_paas_account(context,account, status):
 
     return {
         'acc-id' : account,
-        'pass' : status
+        'paas' : status
     }
 
 
-class PASSDescriber(common.TaggableItemsDescriber,
+class PAASDescriber(common.TaggableItemsDescriber,
                    common.NonOpenstackItemsDescriber):
 
     KIND = 'paas'
-    FILTER_MAP = {'pass-acc': 'accountId',
+    FILTER_MAP = {'paas-acc': 'accountId',
                   }
 
     def format(self, item=None, os_item=None):
-        return _format_pass_account(item)
+        return _format_paas_account(item)
 
 
-def describe_paas_account(context, pass_id=None, filter=None):
-    formatted_pass = PASSDescriber().describe(
-        context, ids=pass_id, filter=filter)
-    return {'paasSet': formatted_pass}
+def describe_paas_account(context, paas_id=None, filter=None):
+    formatted_paas = PAASDescriber().describe(
+        context, ids=paas_id, filter=filter)
+    return {'paasSet': formatted_paas}
 
 
 

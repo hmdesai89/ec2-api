@@ -487,4 +487,4 @@ class RulesPerSecurityGroupLimitExceeded(EC2OverlimitException):
                 "you can add to a security group.")
     
 class PassAccountAleradyExisting(EC2OverlimitException):
-    msg_fmt = _("You already have a PASS account setup.")   
+    msg_fmt = _("You already have a PAAS account setup.")   
