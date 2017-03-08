@@ -42,6 +42,7 @@ from ec2api.api import tag
 from ec2api.api import volume
 from ec2api.api import vpc
 from ec2api.api import flow
+from ec2api.api import account
 from ec2api import exception
 
 CONF = cfg.CONF
@@ -1338,6 +1339,30 @@ class VpcCloudController(CloudController):
     @module_and_param_types(quota, 'account_id')
     def show_quota(self, context, account):
         """
+        """
+    
+    @module_and_param_types(account, 'account_id')
+    def create_paas_account(self, context, account_id):
+        """ Creates a PAAS account entry for specified account
+        
+        Args:
+            context (RequestContext): The request context.
+            account_id : ID of the account for which PAAS must be enabled
+            
+        Returns:
+            Pass account number and paas-id
+        """
+
+    @module_and_param_types(account, 'account_id')
+    def delete_paas_account(self, context, account_id):
+        """ Deletes a PAAS account entry for specified account
+        
+        Args:
+            context (RequestContext): The request context.
+            account_id : ID of the account to delete pass
+            
+        Returns:
+           True if account is deleted
         """
 
     @module_and_param_types(route_table, 'vpc_id')

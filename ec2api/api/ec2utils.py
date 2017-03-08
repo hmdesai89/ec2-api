@@ -360,3 +360,6 @@ def get_os_public_network(context):
             LOG.error(msg)
         raise exception.Unsupported(_('Feature is restricted by OS admin'))
     return os_networks[0]
+
+def convert_to_os_id(item):
+    return item[:8]+'-'+item[8:12]+'-'+item[12:16]+'-'+item[16:20]+'-'+item[20:]
