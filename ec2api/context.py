@@ -62,7 +62,7 @@ class RequestContext(object):
                  is_admin=None, roles=None, remote_address=None,
                  auth_token=None, user_name=None, project_name=None,
                  overwrite=True, service_catalog=None, api_version=None,
-                 is_os_admin=None, **kwargs):
+                 is_os_admin=None, request_id=None, **kwargs):
         """Parameters
 
             :param overwrite: Set to False to ensure that the greenthread local
@@ -76,6 +76,8 @@ class RequestContext(object):
             LOG.warn(_('Arguments dropped when creating context: %s') %
                      str(kwargs))
 
+        if not request_id:
+            request_id = generate_request_id()
         self.user_id = user_id
         self.project_id = project_id
         self.tenant_id = project_id
@@ -86,7 +88,7 @@ class RequestContext(object):
         if isinstance(timestamp, six.string_types):
             timestamp = timeutils.parse_strtime(timestamp)
         self.timestamp = timestamp
-        self.request_id = generate_request_id()
+        self.request_id = request_id
         self.auth_token = auth_token
 
         self.service_catalog = service_catalog

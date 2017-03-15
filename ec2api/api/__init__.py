@@ -299,7 +299,6 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'EnableFlowLogs' : None,
                           'DescribeFlowLogsStatus' : None,
                           'DescribeFlowLogEnableAccounts' : None
-
                     }
 
     def _get_signature(self, req):
@@ -359,6 +358,10 @@ class EC2KeystoneAuth(wsgi.Middleware):
         auth_token = req.headers.get('X-Auth-Token')
 
         return auth_token
+
+    def _get_x_forwarded_for(self, req):
+        client_ip = req.headers.get('X-Forwarded-For')
+        return client_ip
 
     def _get_resource_id(self, req, action):
 
@@ -483,6 +486,11 @@ class EC2KeystoneAuth(wsgi.Middleware):
 
             data = jsonutils.dumps(creds)
 
+        client_ip = self._get_x_forwarded_for(req)
+        LOG.info(_('Client IP of request:{request_id} is {client_ip}'.\
+                    format(request_id=request_id, client_ip=client_ip)))
+        if client_ip:
+            headers['X-Forwarded-For'] = client_ip
         verify = CONF.ssl_ca_file or not CONF.ssl_insecure
         response = requests.request('POST', iam_validation_url, verify=verify,
                                     data=data, headers=headers)
@@ -531,7 +539,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                       auth_token=token_id,
                                       remote_address=remote_address,
                                       service_catalog=catalog,
-                                      api_version=req.params.get('Version'))
+                                      api_version=req.params.get('Version'),
+                                      request_id=request_id)
 
         req.environ['ec2api.context'] = ctxt
 

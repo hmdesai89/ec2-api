@@ -31,6 +31,11 @@ ec2_opts = [
                default=None,
                help='Name of the external network, which is used to connect'
                     'VPCs to Internet and to allocate Elastic IPs.'),
+cfg.StrOpt('account_profile_type',
+               default=None,
+               help='Type of the account profile, which is used to allocate external network and eventually '
+                    'VPCs to Internet and to allocate Elastic IPs.'),
+
 ]
 
 CONF = cfg.CONF
@@ -38,7 +43,11 @@ CONF.register_opts(ec2_opts)
 
 _c2u = re.compile('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))')
 
-
+if type(CONF.external_network) is str:
+   CONF.external_network = CONF.external_network.split()
+if type(CONF.account_profile_type) is str:
+   CONF.account_profile_type = CONF.account_profile_type.split()
+external_network_profile={ CONF.account_profile_type[i] : CONF.external_network[i] for i in range(len(CONF.account_profile_type)) } 
 def camelcase_to_underscore(str):
     return _c2u.sub(r'_\1', str).lower().strip('_')
 
@@ -322,19 +331,27 @@ def os_id_to_ec2_id(context, kind, os_id, items_by_os_id=None,
 #    except glance_exception.HTTPNotFound:
 #        raise exception.InvalidAMIIDNotFound(id=ec2_image_id)
 
-
+def get_account_profile_type(context,kind):
+    accounts=db_api.get_items(context,kind)
+    account_default="low"
+    if len(accounts)!=1:
+        return account_default
+    return accounts[0]['profile_type']
+       
 def get_os_public_network(context):
     neutron = clients.neutron(context)
-    search_opts = {'router:external': True, 'name': CONF.external_network}
+    profile_type=get_account_profile_type(context,'acc')
+    external_network=external_network_profile[profile_type] 
+    search_opts = {'router:external': True, 'name': external_network}
     os_networks = neutron.list_networks(**search_opts)['networks']
     if len(os_networks) != 1:
-        if CONF.external_network:
+        if external_network:
             if len(os_networks) == 0:
                 msg = _LE("No external network with name '%s' is found")
             else:
                 msg = _LE("More than one external network with name '%s' "
                           "is found")
-            LOG.error(msg, CONF.external_network)
+            LOG.error(msg, external_network)
         else:
             if len(os_networks) == 0:
                 msg = _LE('No external network is found')
@@ -343,3 +360,6 @@ def get_os_public_network(context):
             LOG.error(msg)
         raise exception.Unsupported(_('Feature is restricted by OS admin'))
     return os_networks[0]
+
+def convert_to_os_id(item):
+    return item[:8]+'-'+item[8:12]+'-'+item[12:16]+'-'+item[16:20]+'-'+item[20:]

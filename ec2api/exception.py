@@ -295,6 +295,9 @@ class CannotDelete(EC2IncorrectStateException):
 
 class ResourceAlreadyAssociated(EC2IncorrectStateException):
     ec2_code = 'Resource.AlreadyAssociated'
+    
+class AddressStillDisassociating(EC2IncorrectStateException):
+    ec2_code = 'Address.StillDisassociating'
 
 class AlreadyRjilIPAssociated(EC2IncorrectStateException):
     ec2_code = 'AlreadyAssociated.RJILIP'
@@ -482,3 +485,6 @@ class SecurityGroupLimitExceeded(EC2OverlimitException):
 class RulesPerSecurityGroupLimitExceeded(EC2OverlimitException):
     msg_fmt = _("You've reached the limit on the number of rules that "
                 "you can add to a security group.")
+    
+class PassAccountAleradyExisting(EC2OverlimitException):
+    msg_fmt = _("You already have a PAAS account setup.")   

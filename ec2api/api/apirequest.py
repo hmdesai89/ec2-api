@@ -116,8 +116,10 @@ class APIRequest(object):
 
         xml.unlink()
 
-        # Don't write private key to log
-        if self.action != "CreateKeyPair":
+        # Don't write private key or response to flow-log api to log
+        if self.action == "DescribeFlowLog":
+            LOG.debug("DescribeFlowLog response")
+        elif self.action != "CreateKeyPair":
             LOG.debug(response)
         else:
             LOG.debug("CreateKeyPair: Return Private Key")
