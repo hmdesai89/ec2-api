@@ -158,6 +158,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota' : '',
                           'ShowQuota' : '',
                           'DescribeFlowLogs' : '',
+                          'CreatePaasAccount' : '',
+                          'DeletePaasAccount' : '',
                           'EnableFlowLogs' : '', 
                           'DescribeFlowLogsStatus' : '', 
                           'DescribeFlowLogEnableAccounts' : ''
@@ -292,6 +294,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota': None,
                           'ShowQuota' : None,
                           'DescribeFlowLogs' : None,
+                          'CreatePaasAccount' : None,
+                          'DeletePaasAccount' : None,
                           'EnableFlowLogs' : None,
                           'DescribeFlowLogsStatus' : None,
                           'DescribeFlowLogEnableAccounts' : None
