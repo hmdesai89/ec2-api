@@ -78,7 +78,7 @@ def validate_admin_account(account_id,password,m_id,m_pass):
         return False;
 
 #Flow Log API
-def describe_flow_logs(context,start_time,end_time,account_id=None,admin_password=None,direction_ing=None):
+def describe_flow_log(context,start_time,end_time,account_id=None,admin_password=None,direction_ing=None):
     CONF(default_config_files=['/etc/ec2api/ec2api.conf'])
     url = CONF.admin_account.query_url
     day_limit = CONF.admin_account.day_limit
@@ -150,7 +150,7 @@ def enable_flow_logs(context,flow_logging):
         else:
             if not flows:
                 raise exception.AlreadyDisable(reason='Flow_log already disabled')
-            flow_id= flows['id']
+            flow_id= flows[0]['id']
             db_api.delete_item(context, flow_id)
             cleaner.addCleanup(db_api.restore_item, context, 'flow', flows)
     
@@ -161,7 +161,7 @@ def describe_flow_logs_status(context):
     if not flows:
         return  {'status': 'Disable'}
     else:
-        bucket_name=flows['bucket_name']
+        bucket_name=flows[0]['bucket_name']
         return {'status' :'Enable','bucket_name': bucket_name}
 
 def describe_flow_log_enable_accounts(context):
