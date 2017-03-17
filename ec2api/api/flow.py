@@ -6,6 +6,7 @@ from ec2api.api import ec2utils
 from datetime import datetime
 from ec2api import exception
 from ec2api.i18n import _
+from ec2api.db import api as db_api
 import urllib2
 import pytz
 import json
@@ -137,43 +138,30 @@ def describe_flow_logs(context,start_time,end_time,account_id=None,admin_passwor
 def enable_flow_logs(context,flow_logging):
     bucket_name= 'vpc-flow-logs-%s' % context.project_id[20:]
     flows = db_api.get_items(context, 'flow')
-    flow_id = None
-    for flow in flows:
-        if flow['os_id'] == context.project_id:
-            flow_id= flow['id']
-            break
-
     with common.OnCrashCleaner() as cleaner:
-
+     
         if flow_logging == 1:
-            if flow_id is not None:
-                raise exception.AuthFailureError(reason='Flow_log already enabled')
+            if flows:
+                raise exception.AlreadyEnable(reason='Flow_log already enabled')
             flow = db_api.add_item(context, 'flow',
-                                   {'os_id': context.project_id,
-                                    'bucket_name': bucket_name})
+                                   {'bucket_name': bucket_name})
             cleaner.addCleanup(db_api.delete_item, context, flow['id'])
             return {'Flow_status' : 'enable','bucket_name': bucket_name}
         else:
-            if flow_id is None:
-                raise exception.AuthFailureError(reason='Flow_log already disabled')
-    
+            if not flows:
+                raise exception.AlreadyDisable(reason='Flow_log already disabled')
+            flow_id= flows['id']
             db_api.delete_item(context, flow_id)
-            cleaner.addCleanup(db_api.restore_item, context, 'flow', flow)
+            cleaner.addCleanup(db_api.restore_item, context, 'flow', flows)
     
             return True
 
 def describe_flow_logs_status(context):
     flows = db_api.get_items(context, 'flow')
-    flow_id = None
-    bucket_name=None
-    for flow in flows:
-        if flow['os_id'] == context.project_id:
-            flow_id= flow['id']
-            bucket_name=flow['bucket_name']
-            break
-    if flow_id== None:
+    if not flows:
         return  {'status': 'Disable'}
     else:
+        bucket_name=flows['bucket_name']
         return {'status' :'Enable','bucket_name': bucket_name}
 
 def describe_flow_log_enable_accounts(context):
