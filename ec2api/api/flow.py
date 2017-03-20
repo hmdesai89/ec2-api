@@ -6,6 +6,7 @@ from ec2api.api import ec2utils
 from datetime import datetime
 from ec2api import exception
 from ec2api.i18n import _
+from ec2api.db import api as db_api
 import urllib2
 import pytz
 import json
@@ -16,8 +17,8 @@ field = ('{"limit": 100000, "select_fields": ['
            '"sourcevn", "sourceip", "destvn", "destip", "protocol", '
            '"sport", "dport",  "direction_ing", "setup_time", '
            '"teardown_time","agg-packets", "agg-bytes", "action", '
-           '"sg_rule_uuid", "nw_ace_uuid",  "underlay_proto", '
-           '"underlay_source_port","UuidKey"],'
+           '"sg_rule_uuid",  "underlay_proto", '
+           '"underlay_source_port"],'
            '"table": "FlowRecordTable",')
 
 Validator = common.Validator
@@ -132,3 +133,40 @@ def describe_flow_log(context,start_time,end_time,account_id=None,admin_password
     except urllib2.HTTPError as err:
         raise exception.ConnectionError(reason=err)
     return json.load(f)
+
+
+def enable_flow_logs(context,flow_logging):
+    bucket_name= 'vpc-flow-logs-%s' % context.project_id[20:]
+    flows = db_api.get_items(context, 'flow')
+    with common.OnCrashCleaner() as cleaner:
+     
+        if flow_logging == 1:
+            if flows:
+                raise exception.AlreadyEnable(reason='Flow_log already enabled')
+            flow = db_api.add_item(context, 'flow',
+                                   {'bucket_name': bucket_name})
+            cleaner.addCleanup(db_api.delete_item, context, flow['id'])
+            return {'Flow_status' : 'enable','bucket_name': bucket_name}
+        else:
+            if not flows:
+                raise exception.AlreadyDisable(reason='Flow_log already disabled')
+            flow_id= flows[0]['id']
+            db_api.delete_item(context, flow_id)
+            cleaner.addCleanup(db_api.restore_item, context, 'flow', flows)
+    
+            return True
+
+def describe_flow_logs_status(context):
+    flows = db_api.get_items(context, 'flow')
+    if not flows:
+        return  {'status': 'Disable'}
+    else:
+        bucket_name=flows[0]['bucket_name']
+        return {'status' :'Enable','bucket_name': bucket_name}
+
+def describe_flow_log_enable_accounts(context):
+    flows = db_api.get_items_project_ids(context, 'flow')
+    flow_id = []
+    for flow in flows:
+        flow_id.append(flow['project_id'])
+    return {'account_ids': flow_id}

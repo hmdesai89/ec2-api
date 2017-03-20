@@ -235,6 +235,18 @@ def get_items_ids(context, kind, item_ids=None, item_os_ids=None):
 
 
 @require_context
+def get_items_project_ids(context, kind, item_ids=None, item_project_ids=None):
+    query = (model_query(context, models.Item).
+             filter(models.Item.id.like('%s-%%' % kind)))
+    if item_ids:
+        query = query.filter(models.Item.id.in_(item_ids))
+    if item_project_ids:
+        query = query.filter(models.Item.project_id.in_(item_project_ids))
+    return [{'id':item['id'], 'project_id':item['project_id']}
+            for item in query.all()]
+
+
+@require_context
 def add_tags(context, tags):
     session = get_session()
     get_query = (model_query(context, models.Tag, session=session).

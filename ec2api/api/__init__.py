@@ -159,7 +159,10 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'ShowQuota' : '',
                           'DescribeFlowLog' : '',
                           'CreatePaasAccount' : '',
-                          'DeletePaasAccount' : ''
+                          'DeletePaasAccount' : '',
+                          'EnableFlowLogs' : '', 
+                          'DescribeFlowLogsStatus' : '', 
+                          'DescribeFlowLogEnableAccounts' : ''
                         }
 
     armappingdict = {
@@ -292,7 +295,10 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'ShowQuota' : None,
                           'DescribeFlowLog' : None,
                           'CreatePaasAccount' : None,
-                          'DeletePaasAccount' : None
+                          'DeletePaasAccount' : None,
+                          'EnableFlowLogs' : None,
+                          'DescribeFlowLogsStatus' : None,
+                          'DescribeFlowLogEnableAccounts' : None
                     }
 
     def _get_signature(self, req):

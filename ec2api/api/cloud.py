@@ -1838,3 +1838,25 @@ class VpcCloudController(CloudController):
 
        """
 
+
+    @module_and_param_types(flow,'bool')
+    def enable_flow_logs(self,context,flow_logging):
+       """  
+
+       
+       """
+
+    @module_and_param_types(flow)
+    def describe_flow_logs_status(self,context):
+       """  
+
+       
+       """
+
+    @module_and_param_types(flow)
+    def describe_flow_log_enable_accounts(self,context):
+       """  
+
+       
+       """
+

@@ -158,6 +158,14 @@ class Unsupported(EC2Exception):
     msg_fmt = _("The specified request is unsupported. %(reason)s")
 
 
+class AlreadyEnable(EC2Exception):
+    msg_fmt = _("%(reason)s")
+
+
+class AlreadyDisable(EC2Exception):
+    msg_fmt = _("%(reason)s")
+
+
 class UnsupportedOperation(EC2Exception):
     msg_fmt = _('The specified request includes an unsupported operation.')
 
