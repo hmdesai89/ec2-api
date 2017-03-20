@@ -165,9 +165,8 @@ def describe_flow_logs_status(context):
         return {'status' :'Enable','bucket_name': bucket_name}
 
 def describe_flow_log_enable_accounts(context):
-    flows = db_api.get_items_ids(context, 'flow')
+    flows = db_api.get_items_project_ids(context, 'flow')
     flow_id = []
-    sys.stdout.flush()
     for flow in flows:
-        flow_id.append(flow[1])
+        flow_id.append(flow['project_id'])
     return {'account_ids': flow_id}
