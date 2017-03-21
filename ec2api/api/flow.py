@@ -78,7 +78,7 @@ def validate_admin_account(account_id,password,m_id,m_pass):
         return False;
 
 #Flow Log API
-def describe_flow_log(context,start_time,end_time,account_id=None,admin_password=None,direction_ing=None):
+def describe_flow_logs(context,start_time,end_time,account_id=None,admin_password=None,direction_ing=None):
     CONF(default_config_files=['/etc/ec2api/ec2api.conf'])
     url = CONF.admin_account.query_url
     day_limit = CONF.admin_account.day_limit
