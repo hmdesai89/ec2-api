@@ -70,7 +70,7 @@ def convert_to_now(time,day_limit):
 #validate admin password
 def validate_admin_account(account_id,password,m_id,m_pass):
     CONF(default_config_files=['/etc/ec2api/ec2api.conf'])
-    if (m_id == account_id) and (base64.b64decode(m_pass) == password):
+    if ( account_id in m_id) and (base64.b64decode(m_pass) == password):
         return True;
     elif CONF.admin_account.account_id != account_id:
         raise exception.AuthFailureError("Authorization failed, Not authorise")
@@ -89,7 +89,7 @@ def describe_flow_logs(context,start_time,end_time,account_id=None,admin_passwor
                                               'should not be greater than %s minutes') % num_min_limit)
     start_time= convert_to_now(start_time,day_limit)
     end_time= convert_to_now(end_time,day_limit)
-    account_id_match = CONF.admin_account.account_id
+    account_id_match = CONF.admin_account.account_id.split()
     admin_password_match = CONF.admin_account.password
     if direction_ing is not None:
         if direction_ing == 0:
