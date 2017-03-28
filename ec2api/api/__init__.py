@@ -162,7 +162,10 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DeletePaasAccount' : '',
                           'EnableFlowLogs' : '', 
                           'DescribeFlowLogsStatus' : '', 
-                          'DescribeFlowLogEnableAccounts' : ''
+                          'DescribeFlowLogEnableAccounts' : '',
+                          'DescribeNetworkInterfaces' : '',
+                          'CreateNetworkInterface' : '',
+                          'DeleteNetworkInterface' : '',
                         }
 
     armappingdict = {
@@ -299,6 +302,9 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'EnableFlowLogs' : None,
                           'DescribeFlowLogsStatus' : None,
                           'DescribeFlowLogEnableAccounts' : None
+                          'DescribeNetworkInterfaces' : None,
+                          'CreateNetworkInterface' : None,
+                          'DeleteNetworkInterface' : None,
                     }
 
     def _get_signature(self, req):

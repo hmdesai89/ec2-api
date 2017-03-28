@@ -49,9 +49,14 @@ def create_network_interface(context, subnet_id,
                              secondary_private_ip_address_count=None,
                              description=None,
                              security_group_id=None):
-    subnet = ec2utils.get_db_item(context, subnet_id)
+    subnet = ec2utils.get_db_item_cross_account(context, subnet_id)
     if subnet is None:
         raise exception.InvalidSubnetIDNotFound(id=subnet_id)
+    if subnet['project_id'] != context.project_id :
+        if ec2utils.is_paas(contest) :
+            dummy_context = context
+            dummy_context.project_id = subnet['project_id'] 
+    
     neutron = clients.neutron(context)
     os_subnet = neutron.show_subnet(subnet['os_id'])['subnet']
     # NOTE(Alex): Combine and check ip addresses. Neutron will accept
@@ -59,6 +64,8 @@ def create_network_interface(context, subnet_id,
     # address to auto-allocate.
     # TODO(Alex): Implement better diagnostics.
     subnet_ipnet = netaddr.IPNetwork(os_subnet['cidr'])
+
+
     if not private_ip_addresses:
         private_ip_addresses = []
     if private_ip_address is not None:
@@ -67,6 +74,7 @@ def create_network_interface(context, subnet_id,
                                      'primary': True})
     primary_ip = None
     fixed_ips = []
+
     for ip in private_ip_addresses:
         ip_address = netaddr.IPAddress(ip['private_ip_address'])
         if ip_address not in subnet_ipnet:
@@ -85,6 +93,7 @@ def create_network_interface(context, subnet_id,
                 fixed_ips.insert(0, {'ip_address': primary_ip})
         else:
             fixed_ips.append({'ip_address': str(ip_address)})
+
     if not fixed_ips and not secondary_private_ip_address_count:
         secondary_private_ip_address_count = 1
     if secondary_private_ip_address_count > 0:
@@ -93,6 +102,10 @@ def create_network_interface(context, subnet_id,
     vpc = db_api.get_item_by_id(context, subnet['vpc_id'])
     vpc_id = vpc['id']
     dhcp_options_id = vpc.get('dhcp_options_id', None)
+
+
+
+    ## We might need to make security-group-id mandatory
     if not security_group_id:
         default_groups = security_group_api.describe_security_groups(
             context,
@@ -101,6 +114,8 @@ def create_network_interface(context, subnet_id,
         )['securityGroupInfo']
         security_group_id = [default_group['groupId']
                              for default_group in default_groups]
+
+
     security_groups = db_api.get_items_by_ids(context, security_group_id)
     if any(security_group['vpc_id'] != vpc['id']
            for security_group in security_groups):
@@ -108,6 +123,7 @@ def create_network_interface(context, subnet_id,
                 'different networks.')
         raise exception.InvalidGroupNotFound(msg)
     os_groups = [security_group['os_id'] for security_group in security_groups]
+
     with common.OnCrashCleaner() as cleaner:
         os_port_body = {'port': {'network_id': os_subnet['network_id'],
                                  'security_groups': os_groups}}

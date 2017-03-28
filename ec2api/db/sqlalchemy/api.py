@@ -200,6 +200,12 @@ def get_item_by_id(context, item_id):
             first()))
 
 
+def get_item_by_id_cross_account(context, item_id):
+    return (_unpack_item_data(model_query(context, models.Item).
+            filter_by(id=item_id).
+            first()), project_id = True)
+
+
 @require_context
 def get_items_by_ids(context, item_ids):
     if not item_ids:
@@ -328,7 +334,7 @@ def _pack_item_data(item_data):
     }
 
 
-def _unpack_item_data(item_ref):
+def _unpack_item_data(item_ref, project_id = False):
     if item_ref is None:
         return None
     data = item_ref.data
@@ -336,4 +342,7 @@ def _unpack_item_data(item_ref):
     data["id"] = item_ref.id
     data["os_id"] = item_ref.os_id
     data["vpc_id"] = item_ref.vpc_id
+
+    if project_id:
+        data["project_id"] = item_ref.project_id
     return data

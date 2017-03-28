@@ -1611,16 +1611,16 @@ class VpcCloudController(CloudController):
         """
 
     @module_and_param_types(network_interface, 'subnet_id',
-                            'ip',
-                            'dummy',
-                            'int',
-                            'str',
+#                            'ip',
+#                            'dummy',
+#                            'int',
+#                            'str',
                             'sg_ids')
     def create_network_interface(self, context, subnet_id,
-                                 private_ip_address=None,
-                                 private_ip_addresses=None,
-                                 secondary_private_ip_address_count=None,
-                                 description=None,
+#                                 private_ip_address=None,
+#                                 private_ip_addresses=None,
+#                                 secondary_private_ip_address_count=None,
+#                                 description=None,
                                  security_group_id=None):
         """Creates a network interface in the specified subnet.
 
