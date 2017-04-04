@@ -235,14 +235,16 @@ def get_items_ids(context, kind, item_ids=None, item_os_ids=None):
 
 
 @require_context
-def get_items_project_ids(context, kind, item_ids=None, item_project_ids=None):
+def get_items_project_ids(context, kind, item_ids=None, item_project_ids=None,item_data=None):
     query = (model_query(context, models.Item).
              filter(models.Item.id.like('%s-%%' % kind)))
     if item_ids:
         query = query.filter(models.Item.id.in_(item_ids))
     if item_project_ids:
         query = query.filter(models.Item.project_id.in_(item_project_ids))
-    return [{'id':item['id'], 'project_id':item['project_id']}
+    if item_data:
+        query = query.filter(models.Item.data.in_(item_project_ids))
+    return [{'id':item['id'], 'project_id':item['project_id'],'data':json.loads(item['data'])}
             for item in query.all()]
 
 

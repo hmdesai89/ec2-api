@@ -120,9 +120,9 @@ def get_items_ids(context, kind, item_ids=None, item_os_ids=None):
                               item_os_ids=item_os_ids)
 
 
-def get_items_project_ids(context, kind, item_ids=None, item_project_ids=None):
+def get_items_project_ids(context, kind, item_ids=None, item_project_ids=None, item_data=None):
     return IMPL.get_items_project_ids(context, kind, item_ids=item_ids,
-                              item_project_ids=item_project_ids)
+                              item_project_ids=item_project_ids, item_data=item_data)
 
 
 def add_tags(context, tags):

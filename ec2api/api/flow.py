@@ -12,6 +12,7 @@ import pytz
 import json
 import base64
 import ast
+import random
 
 field = ('{"limit": 100000, "select_fields": ['
            '"sourcevn", "sourceip", "destvn", "destip", "protocol", '
@@ -70,7 +71,7 @@ def convert_to_now(time,day_limit):
 #validate admin password
 def validate_admin_account(account_id,password,m_id,m_pass):
     CONF(default_config_files=['/etc/ec2api/ec2api.conf'])
-    if (m_id == account_id) and (base64.b64decode(m_pass) == password):
+    if ( account_id in m_id) and (base64.b64decode(m_pass) == password):
         return True;
     elif CONF.admin_account.account_id != account_id:
         raise exception.AuthFailureError("Authorization failed, Not authorise")
@@ -89,7 +90,7 @@ def describe_flow_logs(context,start_time,end_time,account_id=None,admin_passwor
                                               'should not be greater than %s minutes') % num_min_limit)
     start_time= convert_to_now(start_time,day_limit)
     end_time= convert_to_now(end_time,day_limit)
-    account_id_match = CONF.admin_account.account_id
+    account_id_match = CONF.admin_account.account_id.split()
     admin_password_match = CONF.admin_account.password
     if direction_ing is not None:
         if direction_ing == 0:
@@ -136,15 +137,18 @@ def describe_flow_logs(context,start_time,end_time,account_id=None,admin_passwor
 
 
 def enable_flow_logs(context,flow_logging):
-    bucket_name= 'vpc-flow-logs-%s' % context.project_id[20:]
+    random.seed(context.project_id)
+    rand = random.randint(1, 0xffffff)
+    bucket_name= 'vpc-flow-%s-%s' % (rand, context.project_id[20:])
     flows = db_api.get_items(context, 'flow')
     with common.OnCrashCleaner() as cleaner:
      
         if flow_logging == 1:
             if flows:
                 raise exception.AlreadyEnable(reason='Flow_log already enabled')
+            enabled_at= datetime.now().strftime('%d-%m-%y %H:%M:%S')
             flow = db_api.add_item(context, 'flow',
-                                   {'bucket_name': bucket_name})
+                                   {'bucket_name': bucket_name, 'enabled_at': enabled_at})
             cleaner.addCleanup(db_api.delete_item, context, flow['id'])
             return {'Flow_status' : 'enable','bucket_name': bucket_name}
         else:
@@ -157,16 +161,19 @@ def enable_flow_logs(context,flow_logging):
             return True
 
 def describe_flow_logs_status(context):
+    random.seed(context.project_id)
+    rand = random.randint(1, 0xffffff)
+    bucket_name= 'vpc-flow-%s-%s' % (rand, context.project_id[20:])
     flows = db_api.get_items(context, 'flow')
     if not flows:
-        return  {'status': 'Disable'}
+        return  {'bucket_name': bucket_name, 'status': 'Disable'}
     else:
-        bucket_name=flows[0]['bucket_name']
         return {'status' :'Enable','bucket_name': bucket_name}
 
 def describe_flow_log_enable_accounts(context):
     flows = db_api.get_items_project_ids(context, 'flow')
     flow_id = []
     for flow in flows:
-        flow_id.append(flow['project_id'])
+        fdata = {'project_id': flow['project_id'], 'bucket_name': flow['data']['bucket_name'], 'enabled_at': flow['data']['enabled_at']}
+        flow_id.append(fdata)
     return {'account_ids': flow_id}
