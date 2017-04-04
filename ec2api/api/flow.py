@@ -146,7 +146,7 @@ def enable_flow_logs(context,flow_logging):
         if flow_logging == 1:
             if flows:
                 raise exception.AlreadyEnable(reason='Flow_log already enabled')
-            enabled_at= datetime.now().strftime('%d-%m-%y %H:%M:%S')
+            enabled_at= datetime.now().strftime('%d-%m-%Y %H:%M:%S')
             flow = db_api.add_item(context, 'flow',
                                    {'bucket_name': bucket_name, 'enabled_at': enabled_at})
             cleaner.addCleanup(db_api.delete_item, context, flow['id'])
