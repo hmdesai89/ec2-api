@@ -146,9 +146,9 @@ def enable_flow_logs(context,flow_logging):
         if flow_logging == 1:
             if flows:
                 raise exception.AlreadyEnable(reason='Flow_log already enabled')
-            enable_at= datetime.now().strftime('%d-%m-%y %H:%M:%S')
+            enabled_at= datetime.now().strftime('%d-%m-%y %H:%M:%S')
             flow = db_api.add_item(context, 'flow',
-                                   {'bucket_name': bucket_name, 'enable_at': enable_at})
+                                   {'bucket_name': bucket_name, 'enabled_at': enabled_at})
             cleaner.addCleanup(db_api.delete_item, context, flow['id'])
             return {'Flow_status' : 'enable','bucket_name': bucket_name}
         else:
@@ -174,6 +174,6 @@ def describe_flow_log_enable_accounts(context):
     flows = db_api.get_items_project_ids(context, 'flow')
     flow_id = []
     for flow in flows:
-        fdata = {'project_id': flow['project_id'], 'bucket_name': flow['data']['bucket_name'], 'enable_time': flow['data']['enable_at']}
+        fdata = {'project_id': flow['project_id'], 'bucket_name': flow['data']['bucket_name'], 'enabled_at': flow['data']['enabled_at']}
         flow_id.append(fdata)
     return {'account_ids': flow_id}
