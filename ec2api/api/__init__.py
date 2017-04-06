@@ -301,7 +301,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'DeletePaasAccount' : None,
                           'EnableFlowLogs' : None,
                           'DescribeFlowLogsStatus' : None,
-                          'DescribeFlowLogEnableAccounts' : None
+                          'DescribeFlowLogEnableAccounts' : None,
                           'DescribeNetworkInterfaces' : None,
                           'CreateNetworkInterface' : None,
                           'DeleteNetworkInterface' : None,

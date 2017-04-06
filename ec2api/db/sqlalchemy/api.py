@@ -203,8 +203,12 @@ def get_item_by_id(context, item_id):
 def get_item_by_id_cross_account(context, item_id):
     return (_unpack_item_data(model_query(context, models.Item).
             filter_by(id=item_id).
-            first()), project_id = True)
+            first(), True))
 
+def get_item_by_os_id_cross_account(context, item_id):
+    return (_unpack_item_data(model_query(context, models.Item).
+            filter_by(os_id=item_id).
+            first(), True))
 
 @require_context
 def get_items_by_ids(context, item_ids):

@@ -20,6 +20,7 @@ from neutronclient.common import exceptions as neutron_exception
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import timeutils
+from copy import deepcopy as deepcopy
 
 from ec2api.api import address as address_api
 from ec2api.api import clients
@@ -50,12 +51,17 @@ def create_network_interface(context, subnet_id,
                              description=None,
                              security_group_id=None):
     subnet = ec2utils.get_db_item_cross_account(context, subnet_id)
+
+    subnet = ec2utils.get_db_item_cross_account(context, subnet_id)
+    original_context = deepcopy(context)
     if subnet is None:
         raise exception.InvalidSubnetIDNotFound(id=subnet_id)
     if subnet['project_id'] != context.project_id :
-        if ec2utils.is_paas(contest) :
-            dummy_context = context
-            dummy_context.project_id = subnet['project_id'] 
+        if ec2utils.is_paas(context) :
+            context.project_id = subnet['project_id']
+        else :
+            raise exception.InvalidSubnetIDNotFound(id=subnet_id)
+
     
     neutron = clients.neutron(context)
     os_subnet = neutron.show_subnet(subnet['os_id'])['subnet']
@@ -105,7 +111,6 @@ def create_network_interface(context, subnet_id,
 
 
 
-    ## We might need to make security-group-id mandatory
     if not security_group_id:
         default_groups = security_group_api.describe_security_groups(
             context,
@@ -127,7 +132,7 @@ def create_network_interface(context, subnet_id,
     with common.OnCrashCleaner() as cleaner:
         os_port_body = {'port': {'network_id': os_subnet['network_id'],
                                  'security_groups': os_groups}}
-        os_port_body['port']['fixed_ips'] = fixed_ips
+        #os_port_body['port']['fixed_ips'] = fixed_ips
         try:
             os_port = neutron.create_port(os_port_body)['port']
         except (neutron_exception.IpAddressGenerationFailureClient,
@@ -158,6 +163,21 @@ def create_network_interface(context, subnet_id,
         network_interface_id = network_interface['id']
         neutron.update_port(os_port['id'],
                             {'port': {'name': network_interface_id}})
+
+
+        ## Adding PNI entry if account is paas
+        if (ec2utils.is_paas(original_context) and
+               original_context.project_id != context.project_id) :
+
+            pni = db_api.add_item(original_context,'pni',
+                              { 'os_data' : os_port['id'] })
+            cleaner.addCleanup(db_api.delete_item,
+                           original_context, pni['id'])
+            network_interface["pni"] = pni["id"]
+            db_api.update_item(context, network_interface)
+
+
+
         if dhcp_options_id:
             dhcp_options._add_dhcp_opts_to_port(
                 context,
@@ -174,11 +194,32 @@ def create_network_interface(context, subnet_id,
 
 
 def delete_network_interface(context, network_interface_id):
-    network_interface = ec2utils.get_db_item(context, network_interface_id)
+    network_interface = ec2utils.get_db_item_cross_account(context, network_interface_id)
+    original_context = deepcopy(context)
+    pni = ''
+
+    if network_interface['project_id'] != context.project_id :
+        if ec2utils.is_paas(context):
+            if 'pni' not in network_interface:
+                raise exception.InvalidNetworkInterfaceIDNotFound(id=network_interface_id)
+            else :
+                pni = ec2utils.get_db_item_cross_account(context, network_interface['pni']) 
+                if pni["project_id"] !=  context.project_id :
+                    raise exception.InvalidNetworkInterfaceIDNotFound(id=network_interface_id)
+            context.project_id = network_interface['os_id']
+
+	else :
+	    raise exception.InvalidNetworkInterfaceIDNotFound(id=network_interface_id)
+    else :
+        if 'pni' in network_interface:
+            raise exception.PniPermissionDenied(id=network_interface_id)
+
     if 'instance_id' in network_interface:
         msg = _("Network interface '%(eni_id)s' is currently in use.")
         msg = msg % {'eni_id': network_interface_id}
         raise exception.InvalidParameterValue(msg)
+
+        
 
     for address in db_api.get_items(context, 'eipalloc'):
         if address.get('network_interface_id') == network_interface['id']:
@@ -186,6 +227,12 @@ def delete_network_interface(context, network_interface_id):
 
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
+
+        if (ec2utils.is_paas(original_context) and
+               original_context.project_id != context.project_id) : 
+            db_api.delete_item(context, pni['id'])
+            cleaner.addCleanup(db_api.restore_item, context, 'pni', pni)
+
         db_api.delete_item(context, network_interface['id'])
         cleaner.addCleanup(db_api.restore_item, context, 'eni',
                            network_interface)
@@ -243,6 +290,16 @@ class NetworkInterfaceDescriber(common.TaggableItemsDescriber):
                 self.ec2_addresses[network_interface['id']],
                 self.security_groups)
 
+    def get_paas_db_items(self):
+        pnis = ec2utils.list_pnis(self.context)
+        if pnis :
+            return [ ec2utils.get_db_os_item_cross_account(self.context,pni["os_data"]) for pni in pnis]
+        return []
+
+	    
+
+        
+
     def get_os_items(self):
         addresses = address_api.describe_addresses(self.context)
         self.ec2_addresses = collections.defaultdict(list)
@@ -253,7 +310,11 @@ class NetworkInterfaceDescriber(common.TaggableItemsDescriber):
         self.security_groups = (
             security_group_api._format_security_groups_ids_names(self.context))
         neutron = clients.neutron(self.context)
-        return neutron.list_ports(tenant_id=self.context.project_id)['ports']
+        if ec2utils.is_paas(self.context):
+            return neutron.list_ports()['ports']
+        else:
+            return neutron.list_ports(tenant_id=self.context.project_id)['ports']
+
 
     def get_name(self, os_item):
         return ''
@@ -469,15 +530,20 @@ def _format_network_interface(context, network_interface, os_port,
     ec2_network_interface['subnetId'] = network_interface['subnet_id']
     ec2_network_interface['vpcId'] = network_interface['vpc_id']
     ec2_network_interface['description'] = network_interface['description']
-    ec2_network_interface['sourceDestCheck'] = (
-        network_interface.get('source_dest_check', True))
-    ec2_network_interface['requesterManaged'] = (
-        os_port.get('device_owner', '').startswith('network:'))
-    ec2_network_interface['ownerId'] = context.project_id
+    #ec2_network_interface['sourceDestCheck'] = (
+    #    network_interface.get('source_dest_check', True))
+    #ec2_network_interface['requesterManaged'] = (
+    #    os_port.get('device_owner', '').startswith('network:'))
+    ec2_network_interface['ownerId'] = os_port["tenant_id"]
     security_group_set = []
     for sg_id in os_port['security_groups']:
         if security_groups.get(sg_id):
             security_group_set.append(security_groups[sg_id])
+        elif ec2utils.is_paas(context):
+            group_name = security_group_api._format_security_groups_ids_names_paas(context,sg_id)
+            security_groups[sg_id] = group_name[sg_id]
+            security_group_set.append(security_groups[sg_id])
+
     ec2_network_interface['groupSet'] = security_group_set
     if 'instance_id' in network_interface:
         ec2_network_interface['status'] = 'in-use'
@@ -519,7 +585,7 @@ def _format_network_interface(context, network_interface, os_port,
                 ipsSet.insert(0, item)
             else:
                 ipsSet.append(item)
-        ec2_network_interface['privateIpAddressesSet'] = ipsSet
+        #ec2_network_interface['privateIpAddressesSet'] = ipsSet
         primary_ip = ipsSet[0]
         ec2_network_interface['privateIpAddress'] = (
             primary_ip['privateIpAddress'])
@@ -527,7 +593,7 @@ def _format_network_interface(context, network_interface, os_port,
             ec2_network_interface['association'] = primary_ip['association']
     # NOTE(ft): AWS returns empty tag set for a network interface
     # if no tag exists
-    ec2_network_interface['tagSet'] = []
+    #ec2_network_interface['tagSet'] = []
     return ec2_network_interface
 
 
