@@ -57,7 +57,7 @@ def create_network_interface(context, subnet_id,
     if subnet is None:
         raise exception.InvalidSubnetIDNotFound(id=subnet_id)
     if subnet['project_id'] != context.project_id :
-        if ec2utils.is_paas(context) :
+        if context.paas_account : #ec2utils.is_paas(context) :
             context.project_id = subnet['project_id']
         else :
             raise exception.InvalidSubnetIDNotFound(id=subnet_id)
@@ -166,7 +166,7 @@ def create_network_interface(context, subnet_id,
 
 
         ## Adding PNI entry if account is paas
-        if (ec2utils.is_paas(original_context) and
+        if (context.paas_account and # (ec2utils.is_paas(original_context) and
                original_context.project_id != context.project_id) :
 
             pni = db_api.add_item(original_context,'pni',
@@ -199,7 +199,7 @@ def delete_network_interface(context, network_interface_id):
     pni = ''
 
     if network_interface['project_id'] != context.project_id :
-        if ec2utils.is_paas(context):
+        if  context.paas_account :#ec2utils.is_paas(context):
             if 'pni' not in network_interface:
                 raise exception.InvalidNetworkInterfaceIDNotFound(id=network_interface_id)
             else :
@@ -228,7 +228,7 @@ def delete_network_interface(context, network_interface_id):
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
 
-        if (ec2utils.is_paas(original_context) and
+        if (context.paas_account and #(ec2utils.is_paas(original_context) and
                original_context.project_id != context.project_id) : 
             db_api.delete_item(context, pni['id'])
             cleaner.addCleanup(db_api.restore_item, context, 'pni', pni)
@@ -310,7 +310,7 @@ class NetworkInterfaceDescriber(common.TaggableItemsDescriber):
         self.security_groups = (
             security_group_api._format_security_groups_ids_names(self.context))
         neutron = clients.neutron(self.context)
-        if ec2utils.is_paas(self.context):
+        if context.paas_account : #ec2utils.is_paas(self.context):
             return neutron.list_ports()['ports']
         else:
             return neutron.list_ports(tenant_id=self.context.project_id)['ports']
@@ -539,7 +539,7 @@ def _format_network_interface(context, network_interface, os_port,
     for sg_id in os_port['security_groups']:
         if security_groups.get(sg_id):
             security_group_set.append(security_groups[sg_id])
-        elif ec2utils.is_paas(context):
+        elif context.paas_account : #ec2utils.is_paas(context):
             group_name = security_group_api._format_security_groups_ids_names_paas(context,sg_id)
             security_groups[sg_id] = group_name[sg_id]
             security_group_set.append(security_groups[sg_id])
