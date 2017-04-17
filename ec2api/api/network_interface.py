@@ -166,7 +166,7 @@ def create_network_interface(context, subnet_id,
 
 
         ## Adding PNI entry if account is paas
-        if (context.paas_account and # (ec2utils.is_paas(original_context) and
+        if (original_context.paas_account and # (ec2utils.is_paas(original_context) and
                original_context.project_id != context.project_id) :
 
             pni = db_api.add_item(original_context,'pni',
@@ -206,7 +206,7 @@ def delete_network_interface(context, network_interface_id):
                 pni = ec2utils.get_db_item_cross_account(context, network_interface['pni']) 
                 if pni["project_id"] !=  context.project_id :
                     raise exception.InvalidNetworkInterfaceIDNotFound(id=network_interface_id)
-            context.project_id = network_interface['os_id']
+            context.project_id = network_interface['project_id']
 
 	else :
 	    raise exception.InvalidNetworkInterfaceIDNotFound(id=network_interface_id)
@@ -228,9 +228,9 @@ def delete_network_interface(context, network_interface_id):
     neutron = clients.neutron(context)
     with common.OnCrashCleaner() as cleaner:
 
-        if (context.paas_account and #(ec2utils.is_paas(original_context) and
+        if (original_context.paas_account and #(ec2utils.is_paas(original_context) and
                original_context.project_id != context.project_id) : 
-            db_api.delete_item(context, pni['id'])
+            db_api.delete_item(original_context, pni['id'])
             cleaner.addCleanup(db_api.restore_item, context, 'pni', pni)
 
         db_api.delete_item(context, network_interface['id'])
@@ -310,7 +310,7 @@ class NetworkInterfaceDescriber(common.TaggableItemsDescriber):
         self.security_groups = (
             security_group_api._format_security_groups_ids_names(self.context))
         neutron = clients.neutron(self.context)
-        if context.paas_account : #ec2utils.is_paas(self.context):
+        if self.context.paas_account : #ec2utils.is_paas(self.context):
             return neutron.list_ports()['ports']
         else:
             return neutron.list_ports(tenant_id=self.context.project_id)['ports']

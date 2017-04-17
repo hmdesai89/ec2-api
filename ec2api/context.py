@@ -62,7 +62,7 @@ class RequestContext(object):
                  is_admin=None, roles=None, remote_address=None,
                  auth_token=None, user_name=None, project_name=None,
                  overwrite=True, service_catalog=None, api_version=None,
-                 is_os_admin=None, request_id=None, paas_account = False, **kwargs):
+                 is_os_admin=None, request_id=None, paas_account = None, **kwargs):
         """Parameters
 
             :param overwrite: Set to False to ensure that the greenthread local
@@ -105,7 +105,11 @@ class RequestContext(object):
         if overwrite or not hasattr(local.store, 'context'):
             self.update_store()
 
-        self.paas_account = paas_account
+
+        if paas_account == 'true':
+            self.paas_account = True
+        else :
+            self.paas_account = False
 
     def update_store(self):
         local.store.context = self
@@ -124,7 +128,8 @@ class RequestContext(object):
                 'service_catalog': self.service_catalog,
                 'project_name': self.project_name,
                 'tenant': self.tenant,
-                'user': self.user}
+                'user': self.user,
+                'paas_account': self.paas_account}
 
     @classmethod
     def from_dict(cls, values):

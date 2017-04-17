@@ -358,7 +358,7 @@ class InvalidGroupReserved(EC2ReservedException):
 
 class PniPermissionDenied(EC2ReservedException):
     ec2_code = 'PremissionDenied'
-    msg_fmt = _('Can\'t delete netwokr interface %(interface_ids)s created by PAAS')
+    msg_fmt = _('Can\'t delete network interface %(id)s created by PAAS')
 
 
 class RouteAlreadyExists(EC2DuplicateException):

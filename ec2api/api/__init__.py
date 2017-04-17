@@ -556,7 +556,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
 
 
         ### Remove this after IAM changes
-        ctxt.paas_account = ec2utils.is_paas(ctxt )
+        ctxt.paas_account = ec2utils.is_paas(ctxt)
 
         req.environ['ec2api.context'] = ctxt
 
