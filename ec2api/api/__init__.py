@@ -158,8 +158,6 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota' : '',
                           'ShowQuota' : '',
                           'DescribeFlowLogs' : '',
-                          'CreatePaasAccount' : '',
-                          'DeletePaasAccount' : '',
                           'EnableFlowLogs' : '', 
                           'DescribeFlowLogsStatus' : '', 
                           'DescribeFlowLogEnableAccounts' : '',
@@ -297,8 +295,6 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota': None,
                           'ShowQuota' : None,
                           'DescribeFlowLogs' : None,
-                          'CreatePaasAccount' : None,
-                          'DeletePaasAccount' : None,
                           'EnableFlowLogs' : None,
                           'DescribeFlowLogsStatus' : None,
                           'DescribeFlowLogEnableAccounts' : None,
@@ -523,8 +519,8 @@ class EC2KeystoneAuth(wsgi.Middleware):
             if not token_id or not project_id or not user_id:
                 raise KeyError
 
-            if 'PaaS_account' in result:
-                paas_account = result['PaaS_account']
+            if 'PaaS' in result:
+                paas_account = result['PaaS']
             else :
                 paas_account = False
 
@@ -556,7 +552,7 @@ class EC2KeystoneAuth(wsgi.Middleware):
 
 
         ### Remove this after IAM changes
-        ctxt.paas_account = ec2utils.is_paas(ctxt)
+        #ctxt.paas_account = ec2utils.is_paas(ctxt)
 
         req.environ['ec2api.context'] = ctxt
 

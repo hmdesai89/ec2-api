@@ -1341,30 +1341,6 @@ class VpcCloudController(CloudController):
         """
         """
     
-    @module_and_param_types(account, 'account_id')
-    def create_paas_account(self, context, account_id):
-        """ Creates a PAAS account entry for specified account
-        
-        Args:
-            context (RequestContext): The request context.
-            account_id : ID of the account for which PAAS must be enabled
-            
-        Returns:
-            Pass account number and paas-id
-        """
-
-    @module_and_param_types(account, 'account_id')
-    def delete_paas_account(self, context, account_id):
-        """ Deletes a PAAS account entry for specified account
-        
-        Args:
-            context (RequestContext): The request context.
-            account_id : ID of the account to delete pass
-            
-        Returns:
-           True if account is deleted
-        """
-
     @module_and_param_types(route_table, 'vpc_id')
     def create_route_table(self, context, vpc_id):
         """Creates a route table for the specified VPC.

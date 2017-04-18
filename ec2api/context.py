@@ -62,7 +62,7 @@ class RequestContext(object):
                  is_admin=None, roles=None, remote_address=None,
                  auth_token=None, user_name=None, project_name=None,
                  overwrite=True, service_catalog=None, api_version=None,
-                 is_os_admin=None, request_id=None, paas_account = None, **kwargs):
+                 is_os_admin=None, request_id=None, paas_account = False, **kwargs):
         """Parameters
 
             :param overwrite: Set to False to ensure that the greenthread local
@@ -106,10 +106,7 @@ class RequestContext(object):
             self.update_store()
 
 
-        if paas_account == 'true':
-            self.paas_account = True
-        else :
-            self.paas_account = False
+        self.paas_account = paas_account
 
     def update_store(self):
         local.store.context = self
