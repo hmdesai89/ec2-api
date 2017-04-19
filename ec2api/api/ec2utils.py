@@ -224,7 +224,7 @@ def get_db_item(context, ec2_id, expected_kind=None):
 
 
 def get_db_item_cross_account(context, ec2_id, expected_kind=None):
-    """Get an DB item, raise AWS compliant exception if it's not found.
+    """Get an DB item for another account, raise AWS compliant exception if it's not found.
 
         Args:
             context (RequestContext): The request context.
@@ -245,7 +245,7 @@ def get_db_item_cross_account(context, ec2_id, expected_kind=None):
     return item
 
 def get_db_os_item_cross_account(context, os_id):
-    """Get an DB item, raise AWS compliant exception if it's not found.
+    """Get an DB item based on os_id from another account, raise AWS compliant exception if it's not found.
 
         Args:
             context (RequestContext): The request context.

@@ -50,7 +50,6 @@ def create_network_interface(context, subnet_id,
                              secondary_private_ip_address_count=None,
                              description=None,
                              security_group_id=None):
-    subnet = ec2utils.get_db_item_cross_account(context, subnet_id)
 
     subnet = ec2utils.get_db_item_cross_account(context, subnet_id)
     original_context = deepcopy(context)
