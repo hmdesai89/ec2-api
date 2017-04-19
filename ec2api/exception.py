@@ -265,6 +265,11 @@ class ReservedSubnetRange(EC2InvalidException):
     msg_fmt = _("The CIDR '%(cidr_block)s' is reserved, kindly input a valid CIDR such as 172.0.0.0/16. "
                 "Please refer VPC API Reference Guide for more details.")
 
+class OutofReservedSubnetRange(EC2InvalidException):
+    ec2_code = 'InvalidCidr.unreserved'
+    msg_fmt = _("PaaS account should use reserved CIDR range, i.e. 10.2xx.x.x/16 . CIDR '%(cidr_block)s' is outside of reserved range ")
+
+
 class InvalidNetworkId(EC2InvalidException):
     ec2_code = 'InvalidNetworkId'
     msg_fmt = _("The CIDR '%(cidr_block)s' is invalid, kindly input a valid CIDR such as '%(ex_cidr_block)s'. "

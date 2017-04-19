@@ -42,7 +42,6 @@ from ec2api.api import tag
 from ec2api.api import volume
 from ec2api.api import vpc
 from ec2api.api import flow
-from ec2api.api import account
 from ec2api import exception
 
 CONF = cfg.CONF

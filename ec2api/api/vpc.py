@@ -43,9 +43,19 @@ Validator = common.Validator
 
 def create_vpc(context, cidr_block, instance_tenancy='default'):
     subnet_ipnet = netaddr.IPNetwork(cidr_block)
+
+    if context.paas_account :
+        if ( subnet_ipnet.ip < netaddr.IPNetwork("10.200.0.0/32").ip
+            or subnet_ipnet.ip > netaddr.IPNetwork("10.255.255.255/32").ip) :
+            raise exception.OutofReservedSubnetRange(cidr_block=cidr_block) 
+    elif ((subnet_ipnet.ip >= netaddr.IPNetwork("10.200.0.0/32").ip and subnet_ipnet.ip <= netaddr.IPNetwork("10.255.255.255/32").ip)) :
+        raise exception.ReservedSubnetRange(cidr_block=cidr_block)
+
+
     if subnet_ipnet.ip >= netaddr.IPNetwork("224.0.0.0/8").ip or (subnet_ipnet.is_loopback()):
 	raise exception.InvalidCidrRange(cidr_block=cidr_block)
-    if (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/8").network == netaddr.IPNetwork("0.0.0.0/0").ip) or (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/16").network == netaddr.IPNetwork("169.254.0.0/16").network):
+    if ((netaddr.IPNetwork(str(subnet_ipnet.ip) + "/8").network == netaddr.IPNetwork("0.0.0.0/0").ip) or 
+        (netaddr.IPNetwork(str(subnet_ipnet.ip) + "/16").network == netaddr.IPNetwork("169.254.0.0/16").network)) : 
 	raise exception.ReservedSubnetRange(cidr_block=cidr_block)
     if subnet_ipnet.network != subnet_ipnet.ip:
         raise exception.InvalidNetworkId(cidr_block=cidr_block, ex_cidr_block=subnet_ipnet.cidr)
