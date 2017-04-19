@@ -158,11 +158,12 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota' : '',
                           'ShowQuota' : '',
                           'DescribeFlowLogs' : '',
-                          'CreatePaasAccount' : '',
-                          'DeletePaasAccount' : '',
                           'EnableFlowLogs' : '', 
                           'DescribeFlowLogsStatus' : '', 
-                          'DescribeFlowLogEnableAccounts' : ''
+                          'DescribeFlowLogEnableAccounts' : '',
+                          'DescribeNetworkInterfaces' : '',
+                          'CreateNetworkInterface' : '',
+                          'DeleteNetworkInterface' : '',
                         }
 
     armappingdict = {
@@ -294,11 +295,12 @@ class EC2KeystoneAuth(wsgi.Middleware):
                           'UpdateQuota': None,
                           'ShowQuota' : None,
                           'DescribeFlowLogs' : None,
-                          'CreatePaasAccount' : None,
-                          'DeletePaasAccount' : None,
                           'EnableFlowLogs' : None,
                           'DescribeFlowLogsStatus' : None,
-                          'DescribeFlowLogEnableAccounts' : None
+                          'DescribeFlowLogEnableAccounts' : None,
+                          'DescribeNetworkInterfaces' : None,
+                          'CreateNetworkInterface' : None,
+                          'DeleteNetworkInterface' : None,
                     }
 
     def _get_signature(self, req):
@@ -517,6 +519,11 @@ class EC2KeystoneAuth(wsgi.Middleware):
             if not token_id or not project_id or not user_id:
                 raise KeyError
 
+            if 'PaaS' in result:
+                paas_account = result['PaaS']
+            else :
+                paas_account = False
+
             user_name = project_name = 'default'
 
             roles = []
@@ -540,7 +547,12 @@ class EC2KeystoneAuth(wsgi.Middleware):
                                       remote_address=remote_address,
                                       service_catalog=catalog,
                                       api_version=req.params.get('Version'),
-                                      request_id=request_id)
+                                      request_id=request_id, 
+                                      paas_account = paas_account )
+
+
+        ### Remove this after IAM changes
+        #ctxt.paas_account = ec2utils.is_paas(ctxt)
 
         req.environ['ec2api.context'] = ctxt
 

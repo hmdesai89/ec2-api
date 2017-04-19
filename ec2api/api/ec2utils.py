@@ -223,6 +223,44 @@ def get_db_item(context, ec2_id, expected_kind=None):
     return item
 
 
+def get_db_item_cross_account(context, ec2_id, expected_kind=None):
+    """Get an DB item for another account, raise AWS compliant exception if it's not found.
+
+        Args:
+            context (RequestContext): The request context.
+            ec2_id (str): The ID of the requested item.
+            expected_kind (str): The expected kind of the requested item.
+                It should be specified for a kind of ec2_id to be validated,
+                if you need it.
+
+        Returns:
+            The DB item.
+    """
+    item = db_api.get_item_by_id_cross_account(context, ec2_id)
+    if (item is None or
+            expected_kind and get_ec2_id_kind(ec2_id) != expected_kind):
+        kind = expected_kind or get_ec2_id_kind(ec2_id)
+        params = {'id': ec2_id}
+        raise NOT_FOUND_EXCEPTION_MAP[kind](**params)
+    return item
+
+def get_db_os_item_cross_account(context, os_id):
+    """Get an DB item based on os_id from another account, raise AWS compliant exception if it's not found.
+
+        Args:
+            context (RequestContext): The request context.
+            ec2_id (str): The ID of the requested item.
+            expected_kind (str): The expected kind of the requested item.
+                It should be specified for a kind of ec2_id to be validated,
+                if you need it.
+
+        Returns:
+            The DB item.
+    """
+    item = db_api.get_item_by_os_id_cross_account(context, os_id)
+    return item
+
+
 def get_db_items(context, kind, ec2_ids):
     if not ec2_ids:
         return db_api.get_items(context, kind)
@@ -363,3 +401,42 @@ def get_os_public_network(context):
 
 def convert_to_os_id(item):
     return item[:8]+'-'+item[8:12]+'-'+item[12:16]+'-'+item[16:20]+'-'+item[20:]
+
+
+### This part is added for testing only
+def is_paas(context) :
+    '''  Find out whether account in question is 
+         paas account or not
+    '''
+    item = db_api.get_items(context, "paas")
+    if item :
+        LOG.debug(item)
+        return True
+    return False
+
+def list_pnis(context) :
+    ''' Returns list and detail of ports which belong
+        to given paas account. Called from list_port
+        api if account in question is a pass account
+    '''
+
+    LOG.debug("Listing pnis")
+    pnis = db_api.get_items(context, 'pni')
+    LOG.debug(pnis)
+    return pnis
+
+
+
+def delete_pni(context, port_id) :
+    ''' Remove a pni entry from ec2db
+    '''
+    LOG.debug('Removing pni--')
+    pnis = db_api.get_items(context, 'pni')
+    pni_id = ''
+    for pni in pnis :
+        if pni['os_data'] == port_id :
+            pni_id = pni['id']
+            break
+    LOG.debug(pni_id)
+    db_api.delete_item(context, pni_id)
+    return

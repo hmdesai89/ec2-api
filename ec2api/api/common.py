@@ -280,6 +280,10 @@ class UniversalDescriber(object):
     def get_os_items(self):
         return []
 
+    def get_paas_db_items(self):
+        return []
+
+
     def auto_update_db(self, item, os_item):
         if item is None and self.KIND not in VPC_KINDS:
             item = ec2utils.auto_create_db_item(self.context, self.KIND,
@@ -343,6 +347,7 @@ class UniversalDescriber(object):
         self.names = set(names or [])
         self.items = self.get_db_items()
         self.os_items = self.get_os_items()
+        self.items += self.get_paas_db_items()
         formatted_items = []
 
         self.items_dict = {i['os_id']: i for i in (self.items or [])}

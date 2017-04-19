@@ -375,6 +375,21 @@ def _format_security_groups_ids_names(context):
                                                 security_groups)})
     return ec2_security_groups
 
+def _format_security_groups_ids_names_paas(context,sg_id):
+    neutron = clients.neutron(context)
+    os_security_group = neutron.list_security_groups(
+        id=sg_id)['security_groups'][0]
+    security_group = ec2utils.get_db_os_item_cross_account(context, sg_id)
+    ec2_security_group = {}
+    group_name =  os_security_group['name']
+    if os_security_group['name'] == security_group['vpc_id']:
+        group_name = 'default'
+    ec2_security_group[os_security_group['id']] = (
+            {'groupId': security_group['id'],
+             'groupName': group_name}) 
+    return ec2_security_group
+
+
 
 def _format_security_group(security_group, os_security_group,
                            security_groups, os_security_groups):
